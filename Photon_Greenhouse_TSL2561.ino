@@ -102,7 +102,11 @@ char adafruitVoltage[50] = "error";
 
 char googleString[64];
 
+<<<<<<< Updated upstream
 int deepSleep(String command);
+=======
+//DEBUG //int deepSleep(String command); **********************************************
+>>>>>>> Stashed changes
 bool goodnight = FALSE;
 
 //Wake Time variables initialized
@@ -252,9 +256,17 @@ void setup()
   Particle.variable("result", googleString);
   Particle.variable("voltage12v", voltage12v);
   Particle.variable("Solar12vSOC", batt12vSOC);
+<<<<<<< Updated upstream
 
   Particle.function("sleep", deepSleep);
   Particle.subscribe("hook-response/ubidots_ambientHumidity", ubidotsRESPONDED, MY_DEVICES);
+=======
+/**********    DEBUG problems with timing    *************************************
+  //Particle.function("sleep", deepSleep);
+  ********************************************************************************/
+
+  Particle.subscribe("hook-response/sensor_data_toGCP", gcpRESPONDED, MY_DEVICES);
+>>>>>>> Stashed changes
   //delay(3000);
 }
 
@@ -366,6 +378,8 @@ void loop()
   //getTemperatures(*temps1, 6, D6, 0);
   getTemperatures(*temps2, 3, A3, 1);
 
+  Particle.publish("DS18B20 check: T7,T8,T9,T10", String(T7) + String(T8) + String(T9) + String(T10));
+
   // From now you can use the chosen sensor names as if it were ordinary floating type variables...
 
   // Here's an example: Using one of the temperatures in a condition: Warm it up >25°C, then prints all temperatures to serial monitor by bus...
@@ -408,13 +422,47 @@ void loop()
 
 
 
-
+//DEBUG - remove when these variables are fixed
+  Particle.publish("ambientTempF, ambientHumidity", String(ambientTempF) + ", " + String(ambientHumidity));
+  delay(2000);
   // format the sensor data as JSON, so it can be easily parsed
+<<<<<<< Updated upstream
   //sprintf(googleString, "{\"waterTemp\":%f,\"ambientTemp\":%f,\"Humidity\":%f}", waterTempF, ambientTempF, ambientHumidity);
+=======
+  sprintf(googleString, "{\"lux\":%d,\"greenhouseTemp\":%.2f,\"waterTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%d}", lux, T7, T8, ambientTempF, ambientHumidity, Time.now());
+//DEBUG - remove if this is sending every time
+  Particle.publish("Checking if Particle.connected");
+  delay(2000);
+  if (Particle.connected()) {
+    //DEBUG - remove if this is sending every time
+    Particle.publish("Checking if GCP Publish is Ready");
+    delay(2000);
+    //if (gcp_waiting_to_publish == false) {
+      Particle.publish("sensor_data_toGCP", googleString);
+
+      // *********** No longer using Ubidots for data collection and visualization ******
+      //Particle.publish("ubidots_solarVoltage", "{ \"ubidots_solarVoltage\": \"" + String(batt12vSOC) + "\" }");
+      //Particle.process();
+      //delay(1000);
+      //Particle.publish("ubidots_lux", "{ \"ubidots_lux\": \"" + String(lux) + "\" }");
+      //Particle.process();
+      //delay(1000);
+      //Particle.publish("ubidots_greenhouseTemp", "{ \"ubidots_greenhouseTemp\": \"" + String(T8) + "\" }");
+      //Particle.process();
+      //delay(1000);
+      //Particle.publish("ubidots_waterTemp", "{ \"ubidots_waterTemp\": \"" + String(T7) + "\" }");
+      //Particle.process();
+      //delay(1000);
+      //Particle.publish("ubidots_ambientTemp", "{ \"ubidots_ambientTemp\": \"" + String(ambientTempF) + "\" }");
+      //Particle.process();
+      //delay(1000);
+      //Particle.publish("ubidots_ambientHumidity", "{ \"ubidots_ambientHumidity\": \"" + String(ambientHumidity) + "\" }");
+>>>>>>> Stashed changes
 
   if (Particle.connected() && Ubidots_waiting == FALSE) {
       Particle.publish("ubidots_solarVoltage", "{ \"ubidots_solarVoltage\": \"" + String(batt12vSOC) + "\" }");
       Particle.process();
+<<<<<<< Updated upstream
       delay(1000);
       Particle.publish("ubidots_lux", "{ \"ubidots_lux\": \"" + String(lux) + "\" }");
       Particle.process();
@@ -432,6 +480,18 @@ void loop()
       Particle.process();
       ubidotsTimer.start();
       Ubidots_waiting = TRUE;
+=======
+      delay(3000); //should be unnecessary
+      gcpTimer.start();
+      gcp_waiting_to_publish = true;
+    //}
+    //else {
+      Serial.println("Waiting on timer for Google Cloud Platfrom upload...");
+    //DEBUG - remove if this is sending every time
+      Particle.publish("Waiting on timer for GCP upload...", String(gcp_waiting_to_publish));
+      delay(1000); //easy way to stop publish spam
+    //}
+>>>>>>> Stashed changes
   }
 
 
@@ -450,22 +510,44 @@ void loop()
       }
   }
 
+<<<<<<< Updated upstream
   if (goodnight == TRUE) {
       Particle.publish("Device has been told to sleep: ");
+=======
+/************** DEBUG timing of sleep functions ********************
+  if (goodnight == true) {
+      Particle.publish("Device has been told to sleep: ", String(goodnight));
+>>>>>>> Stashed changes
       Particle.process();
       go_to_sleep();
   }
+  else {
+    //DEBUG - remove this whole else statement once timer is fixed ***
+    Particle.publish("goodnight boolean is:", String(goodnight));
+    Particle.process();
+    delay(2000);
+  }
+  *******************************************************************/
 
   if (voltage12v > 0) {
     if (voltage12v < 3000) {
+<<<<<<< Updated upstream
         Particle.publish("Battery Critically Low - Entering Power Save Mode");
+=======
+        Particle.publish("Battery Critically Low - Entering Power Save Mode", String(voltage12v));
+>>>>>>> Stashed changes
         Particle.process();
         delay(10000);
         System.sleep(SLEEP_MODE_DEEP, 3600);
     }
   }
   else {
+<<<<<<< Updated upstream
     Particle.publish("Battery Monitor Circuit Error");
+=======
+    Particle.publish("Battery Monitor Circuit Error", String(voltage12v));
+    delay(2000); // This delay is just an easy way to make sure there aren't too many publish calls
+>>>>>>> Stashed changes
   }
 
 }
@@ -537,7 +619,15 @@ void ubidotsRESPONDED(const char *name, const char *data) {
 
 
     //delay(3000);  //This shouldn't be necessary
+<<<<<<< Updated upstream
     Ubidots_waiting = FALSE;  // Comment out if non-publish functions are used.
+=======
+    gcp_waiting_to_publish = false;
+    // ******* DEBUG CODE **********
+    Particle.publish("gcpRESPONDED told this device to sleep");
+    delay(5000);
+    // *****************************
+>>>>>>> Stashed changes
     System.sleep(A4,RISING,wakeSeconds);
 }
 
