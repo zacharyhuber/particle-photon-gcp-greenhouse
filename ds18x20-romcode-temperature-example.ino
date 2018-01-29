@@ -1,29 +1,33 @@
+
+// reset the system after 60 seconds if the application is unresponsive
+ApplicationWatchdog wd(60000, System.reset);// EXAMPLE USAGE
 /*
-Use this sketch to read the temperature from 1-Wire devices
-you have attached to your Particle device (core, p0, p1, photon, electron)
+void loop() {
+  while (some_long_process_within_loop) {
+    wd.checkin(); // resets the AWDT count
+  }
+}
+// AWDT count reset automatically after loop() ends
+*/
 
-Temperature is read from: DS18S20, DS18B20, DS1822, DS2438
 
+
+/*
 I/O setup:
 These made it easy to just 'plug in' my 18B20
 
 D3 - 1-wire ground, or just use regular pin and comment out below.
 D4 - 1-wire signal, 2K-10K resistor to D5 (3v3)
 D5 - 1-wire power, ditto ground comment.
-
-A pull-up resistor is required on the signal line. The spec calls for a 4.7K.
-I have used 1K-10K depending on the bus configuration and what I had out on the
-bench. If you are powering the device, they all work. If you are using parasitic
-power it gets more picky about the value.
-
 */
-
 #include "DS18.h"
 
 DS18 sensor(A3);
 
 char ROMCODE[10];
 //char greenhouseTemp[10];
+
+
 
 void setup() {
   Serial.begin(9600);
