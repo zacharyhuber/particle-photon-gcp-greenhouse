@@ -1,4 +1,6 @@
 
+STARTUP(WiFi.selectAntenna(ANT_AUTO)); // This makes sure the Photon is using the best wireless signal.
+
 // reset the system after 60 seconds if the application is unresponsive
 ApplicationWatchdog wd(60000, System.reset);// EXAMPLE USAGE
 /*
@@ -23,6 +25,8 @@ D5 - 1-wire power, ditto ground comment.
 #include "DS18.h"
 
 DS18 sensor(A3);
+
+
 
 char ROMCODE[10];
 //char greenhouseTemp[10];
