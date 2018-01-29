@@ -80,11 +80,20 @@ const int SensorFrequency = 4000;  // I2C bus sensor polling frequency
 unsigned long LastReading = 4000;
     //=========================================================================
 
+const int PublishFrequency = 600000; // gcp upload frequency
+unsigned long LastPublish = 20000;
+
+char googleString[100]; // sensor_data_toGCP JSON string
+    //=========================================================================
+
+
 // Variable Declarations
+double waterTemp = 0;
+double greenhouseTemp = 0;
 double ambientTempC = 0;
 double ambientTempF = 0;
 double ambientHumidity = 0;
-int lux = 0;
+double lux = 0;
 //int brightness = 0;
     //=========================================================================
 
@@ -136,7 +145,7 @@ void configureSensor(void)
 
   /* Update these values depending on what you've set above! */
   Serial.println("------------------------------------");
-  Serial.print  ("Gain:         "); Serial.println("No gain");
+  Serial.print  ("Gain:         "); Serial.println("3x gain");
   Serial.print  ("Timing:       "); Serial.println("402 ms");
   Serial.println("------------------------------------");
 }
@@ -211,6 +220,7 @@ void loop()
               and no reliable data could be generated! */
           Serial.println("Sensor overload");
           Particle.publish("Sensor overload");
+          lux = 0;
       }
 
       // Individual Temp/Humidity calls
@@ -261,6 +271,15 @@ void loop()
     }
   }
   Serial.println();
+
+  if ((CurrentMillis - LastPublish) > PublishFrequency) {
+    //*********************************
+    // format the sensor data as JSON, so it can be easily parsed
+    sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, ambientTempF, ambientHumidity, Time.now());
+    Particle.publish("sensor_data_toGCP", googleString);
+
+    LastPublish = millis();
+  }
 }
 
 void printDebugInfo() {
@@ -294,33 +313,30 @@ void printDebugInfo() {
     addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7]
   );
 
-  const char greenhouseTemp[] = "2874722A070000A5";
-  const char waterTemp[] = "285DE726070000F2";
-//  sprintf(greenhouseTemp, "%02X%02X%02X%02X%02X%02X%02X%02X",
+  const char greenhouseROM[] = "2874722A070000A5";
+  const char waterROM[] = "285DE726070000F2";
+//  sprintf(greenhouseROM, "%02X%02X%02X%02X%02X%02X%02X%02X",
 //    0x28, 0x74, 0x72, 0x2A, 0x07, 0x00, 0x00, 0xA5
 //  );
   //ROMCODE == "2874722A070000A5\0"
-  if (strcmp(ROMCODE,greenhouseTemp) == 0) {
+  if (strcmp(ROMCODE,greenhouseROM) == 0) {
+      greenhouseTemp = sensor.fahrenheit();
       Particle.publish("greenhouseTemp", String(sensor.fahrenheit()));
-  } else if (strcmp(ROMCODE,waterTemp) == 0) {
+  } else if (strcmp(ROMCODE,waterROM) == 0) {
+      waterTemp = sensor.fahrenheit();
       Particle.publish("waterTemp", String(sensor.fahrenheit()));
   } else {
       //Particle.publish("debug", greenhouseTemp);
       Particle.publish("new ROMCODE", ROMCODE);
   }
 
-  /*********************************
-  // format the sensor data as JSON, so it can be easily parsed
-  sprintf(googleString, "{\"lux\":%d,\"greenhouseTemp\":%.2f,\"waterTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%d}", lux, T7, T8, ambientTempF, ambientHumidity, Time.now());
-  Particle.publish("sensor_data_toGCP", googleString);
-  *********************************/
 
-  char googleString[64];
-  sprintf(googleString,
+  char ds18String[64];
+  sprintf(ds18String,
     " ROM=%02X%02X%02X%02X%02X%02X%02X%02X: %.2f",
     addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7], sensor.fahrenheit()
   );
-  Particle.publish("googleString", googleString);
+  Particle.publish("DS18B20 Probe Temperature", ds18String);
 
   // Print the raw sensor data
   uint8_t data[9];
