@@ -202,8 +202,8 @@ void loop()
       {
           Serial.print(event.light); Serial.print(" lux");
           lux = event.light;
-          //Particle.publish("lux", String(event.light));
-          //Serial.println("      ...publish successful.");
+          Particle.publish("lux", String(event.light));
+          Serial.println("      ...publish successful.");
       }
       else
       {
