@@ -170,7 +170,7 @@ void setup()
   // Setup the sensor gain and integration time
   configureSensor();
 
-  /*****************
+
   Serial.println("HDC100x test");
 
   if(!hdc.begin())
@@ -179,7 +179,7 @@ void setup()
       Particle.publish("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
   }
   delay(15);    // let the chip initialize
-  ******************/
+
 }
 
 void loop()
@@ -213,13 +213,14 @@ void loop()
           Particle.publish("Sensor overload");
       }
 
-      /************************
-      Serial.print("Temp: "); Serial.print(hdc.readTemperature());
-      Serial.print("\t\tHum: "); Serial.println(hdc.readHumidity());
+      // Individual Temp/Humidity calls
+      //Serial.print("Temp: "); Serial.print(hdc.readTemperature());
+      //Serial.print("\t\tHum: "); Serial.println(hdc.readHumidity());
 
       //read Temp and Humidity from HDC1008 on I2C bus with a single read
       hdc.ReadTempHumidity();     // one conversion, one read version
       ambientTempF = hdc.GetTemperature() * 1.8 + 32.0;
+      ambientHumidity = hdc.GetHumidity();
       Serial.print("\tAmbientTempC: "); Serial.print(hdc.GetTemperature());
       Serial.print("\tAmbientTempF: "); Serial.print(ambientTempF);
       Serial.print("\tAmbientHumidity: "); Serial.print(hdc.GetHumidity());
@@ -227,8 +228,10 @@ void loop()
       if (hdc.batteryLOW()) Serial.println("TRUE");
       else Serial.println("FALSE");
 
-      ambientHumidity = hdc.GetHumidity();
-      *************************/
+      Particle.publish("ambientTempF & ambientHumidity", String(ambientTempF) + String(ambientHumidity));
+
+
+
       LastReading = millis();
   }
 
