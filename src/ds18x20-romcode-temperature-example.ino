@@ -20,6 +20,65 @@ void loop() {
 // AWDT count reset automatically after loop() ends
 */
     //=========================================================================
+// This enables retained variables in the Backup RAM (SRAM) 
+STARTUP(System.enableFeature(FEATURE_RETAINED_MEMORY));
+
+/*
+When adding new retained variables to an existing set of retained variables,
+it's a good idea to add them after the existing variables.
+This ensures the existing retained data is still valid even with the new code.
+*/
+retained double L0;
+retained double L1;
+retained double L2;
+retained double L3;
+retained double L4;
+retained double L5;
+
+retained double wT0;
+retained double wT1;
+retained double wT2;
+retained double wT3;
+retained double wT4;
+retained double wT5;
+
+retained double gT0; // ??? is this? why is it showing up as a Class method?
+retained double gT1; // ??? is this? why is it showing up as a Class method?
+retained double ghT2;
+retained double ghT3;
+retained double ghT4;
+retained double ghT5;
+
+retained double hT0;
+retained double hT1;
+retained double hT2;
+retained double hT3;
+retained double hT4;
+retained double hT5;
+
+retained double aT0;
+retained double aT1;
+retained double aT2;
+retained double aT3;
+retained double aT4;
+retained double aT5;
+
+retained double aH0;
+retained double aH1;
+retained double aH2;
+retained double aH3;
+retained double aH4;
+retained double aH5;
+
+retained double ts0;
+retained double ts1;
+retained double ts2;
+retained double ts3;
+retained double ts4;
+retained double ts5;
+
+    //=========================================================================
+
 /*
 I/O setup:
 These made it easy to just 'plug in' my 18B20
