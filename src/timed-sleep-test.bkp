@@ -1,0 +1,122 @@
+int nextTEN = 42;
+int wakeupHour = 42;
+long wakeSeconds = 42;
+bool goodnight = FALSE;
+
+
+void set_wake_time()  {
+    int currentHour = Time.hour();
+    Serial.print("currentHour is ");
+    Serial.println(currentHour);
+    int currentMinute = Time.minute();
+    int currentTEN = currentMinute / 10;
+    // this should be set up as a series of else if statements, probably
+    if (currentTEN == 5) {
+        nextTEN = 0;
+        if (currentHour == 23) {
+            wakeupHour = 0;
+        }
+        else { wakeupHour = currentHour + 1; }
+    }
+    else {
+        nextTEN = currentTEN + 1;
+        wakeupHour = currentHour;
+    }
+    int wakeupMinute = nextTEN * 10;
+
+    Serial.print("Wake-up time is: ");
+    Serial.print(wakeupHour);
+    Serial.print(":");
+    Serial.println(wakeupMinute);
+    Particle.publish("Wake-up time is: ", String(wakeupHour) + ":" + String(wakeupMinute));
+
+    int wakeTime = wakeupMinute - currentMinute;
+    if (wakeupMinute == 0) { wakeTime = 60 - currentMinute; }
+
+    Serial.print("Minutes to wake-up: ");
+    Serial.println(wakeTime);
+    Particle.publish("Minutes to wake-up: ", String(wakeTime));
+    Serial.println("Particle.publish sent");
+    wakeSeconds = wakeTime * 60;
+}
+
+
+void go_to_sleep()  {
+    //Timer_Running = FALSE;
+    //Particle.publish("Going to sleep");
+    //Particle.process();
+    System.sleep(SLEEP_MODE_DEEP,wakeSeconds);
+}
+
+void setup() {
+
+Serial.begin(9600);
+Serial.println("Initializing Wake-up Time Test");
+Particle.publish("Initializing Wake-up Time Test");
+Particle.publish("temperature", "19 F"); //this is copy/pasted from Particle's tutorial
+
+}
+
+void loop() {
+if (Particle.connected() && goodnight == FALSE) {
+
+    set_wake_time();
+    /***************MOVED TO SEPARATE FUNCTION*******************
+    int currentHour = Time.hour();
+    Serial.print("currentHour is ");
+    Serial.println(currentHour);
+    int currentMinute = Time.minute();
+    int currentTEN = currentMinute / 10;
+    // this should be set up as a series of else if statements, probably
+    if (currentTEN == 5) {
+        nextTEN = 0;
+        if (currentHour == 23) {
+            wakeupHour = 0;
+        }
+        else { wakeupHour = currentHour + 1; }
+    }
+    else {
+        nextTEN = currentTEN + 1;
+        wakeupHour = currentHour;
+    }
+    int wakeupMinute = nextTEN * 10;
+
+    Serial.print("Wake-up time is: ");
+    Serial.print(wakeupHour);
+    Serial.print(":");
+    Serial.println(wakeupMinute);
+    Particle.publish("Wake-up time is: ", String(wakeupHour) + ":" + String(wakeupMinute));
+
+    int wakeTime = wakeupMinute - currentMinute;
+    if (wakeupMinute == 0) { wakeTime = 60 - currentMinute; }
+
+    Serial.print("Minutes to wake-up: ");
+    Serial.println(wakeTime);
+    Particle.publish("Minutes to wake-up: ", String(wakeTime));
+    Serial.println("Particle.publish sent");
+    wakeSeconds = wakeTime * 60;
+    ************************ end ***********************/
+    //Particle.process();
+    //delay(10000);
+    Serial.print("Going to Sleep for {");
+    Serial.print(wakeSeconds);
+    Serial.println("} seconds.");
+    //System.sleep(SLEEP_MODE_DEEP,wakeSeconds);
+    goodnight = TRUE; //Particle.publish are not working with sleep directly after in loop()
+    return;
+    }
+
+    /*
+    // ***insert code to sleepUntil (currentHour:wakeupMinute)
+    // ***also, the above code could be moved to setup(); thus setting the wakeup time during wakeup
+    void sleepUntil(time_t wakeupTime) {
+     wakeupTime -= Time.local();
+     System.sleep(SLEEP_MODE_DEEP, wakeupTime);
+    }
+    */
+    if (goodnight == TRUE) {
+        //Particle.publish("Device has been told to sleep: ");
+        //Particle.process();
+        go_to_sleep();
+  }
+}
