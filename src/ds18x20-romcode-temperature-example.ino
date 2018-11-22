@@ -90,6 +90,7 @@ char googleString[100]; // sensor_data_toGCP JSON string
 // Variable Declarations
 double waterTemp = 0;
 double greenhouseTemp = 0;
+double heattankTemp = 0;
 double ambientTempC = 0;
 double ambientTempF = 0;
 double ambientHumidity = 0;
@@ -275,7 +276,7 @@ void loop()
   if ((CurrentMillis - LastPublish) > PublishFrequency) {
     //*********************************
     // format the sensor data as JSON, so it can be easily parsed
-    sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, ambientTempF, ambientHumidity, Time.now());
+    sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
     Particle.publish("sensor_data_toGCP", googleString);
 
     LastPublish = millis();
@@ -315,6 +316,7 @@ void printDebugInfo() {
 
   const char greenhouseROM[] = "2874722A070000A5";
   const char waterROM[] = "285DE726070000F2";
+  //const char heattankROM[] = "";
 //  sprintf(greenhouseROM, "%02X%02X%02X%02X%02X%02X%02X%02X",
 //    0x28, 0x74, 0x72, 0x2A, 0x07, 0x00, 0x00, 0xA5
 //  );
@@ -325,6 +327,9 @@ void printDebugInfo() {
   } else if (strcmp(ROMCODE,waterROM) == 0) {
       waterTemp = sensor.fahrenheit();
       Particle.publish("waterTemp", String(sensor.fahrenheit()));
+  } else if (strcmp(ROMCODE,heattankROM) == 0) {
+      heattankTemp = sensor.fahrenheit();
+      Particle.publish("heattankTemp", String(sensor.fahrenheit()));
   } else {
       //Particle.publish("debug", greenhouseTemp);
       Particle.publish("new ROMCODE", ROMCODE);
