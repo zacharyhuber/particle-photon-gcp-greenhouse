@@ -6,3 +6,4 @@
 README.md
 src/ds18x20-romcode-temperature.bkp
 src/timed-sleep-test.bkp
+/.vscode
