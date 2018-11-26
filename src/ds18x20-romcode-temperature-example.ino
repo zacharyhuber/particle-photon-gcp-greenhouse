@@ -43,11 +43,11 @@ retained double wT4;
 retained double wT5;
 
 retained double gT0; // ??? is this? why is it showing up as a Class method?
-retained double gT1; // ??? is this? why is it showing up as a Class method?
-retained double ghT2;
-retained double ghT3;
-retained double ghT4;
-retained double ghT5;
+retained double gT1;
+retained double gT2;
+retained double gT3;
+retained double gT4;
+retained double gT5;
 
 retained double hT0;
 retained double hT1;
@@ -70,12 +70,12 @@ retained double aH3;
 retained double aH4;
 retained double aH5;
 
-retained double ts0;
-retained double ts1;
-retained double ts2;
-retained double ts3;
-retained double ts4;
-retained double ts5;
+retained uint32_t ts0;
+retained uint32_t ts1;
+retained uint32_t ts2;
+retained uint32_t ts3;
+retained uint32_t ts4;
+retained uint32_t ts5;
 
     //=========================================================================
 
@@ -142,7 +142,7 @@ unsigned long LastReading = 4000;
 const int PublishFrequency = 600000; // gcp upload frequency
 unsigned long LastPublish = 20000;
 
-char googleString[100]; // sensor_data_toGCP JSON string
+char googleString[255]; // sensor_data_toGCP JSON string, 255 bytes max for Particle.publish data object
     //=========================================================================
 
 
@@ -255,11 +255,29 @@ void loop()
 {
   delay(5000);
 
+  int currentMinute = Time.minute();
+  int currentTens_place = currentMinute / 10;
 
   unsigned long CurrentMillis = millis();
 
   if ((CurrentMillis - LastReading) > SensorFrequency)
   {
+      switch (currentTens_place) {
+            case 0: ts0 = Time.now();
+                    break;
+            case 1: ts1 = Time.now();
+                    break;
+            case 2: ts2 = Time.now();
+                    break;
+            case 3: ts3 = Time.now();
+                    break;
+            case 4: ts4 = Time.now();
+                    break;
+            case 5: ts5 = Time.now();
+                    break;
+      }
+      }
+      
         // Get a new sensor event
       sensors_event_t event;
       tsl.getEvent(&event);
@@ -282,6 +300,20 @@ void loop()
           Particle.publish("Sensor overload");
           lux = 0;
       }
+      switch (currentTens_place) {
+            case 0: L0 = lux;
+                    break;
+            case 1: L1 = lux;
+                    break;
+            case 2: L2 = lux;
+                    break;
+            case 3: L3 = lux;
+                    break;
+            case 4: L4 = lux;
+                    break;
+            case 5: L5 = lux;
+                    break;
+      }
 
       // Individual Temp/Humidity calls
       //Serial.print("Temp: "); Serial.print(hdc.readTemperature());
@@ -300,6 +332,35 @@ void loop()
 
       Particle.publish("ambientTempF & ambientHumidity", String(ambientTempF) + String(ambientHumidity));
 
+      switch (currentTens_place) {
+        case 0: aT0 = ambientTempF;
+              break;
+        case 1: aT1 = ambientTempF;
+              break;
+        case 2: aT2 = ambientTempF;
+              break;
+        case 3: aT3 = ambientTempF;
+              break;
+        case 4: aT4 = ambientTempF;
+              break;
+        case 5: aT5 = ambientTempF;
+              break;
+      }
+
+      switch (currentTens_place) {
+        case 0: aH0 = ambientHumidity;
+              break;
+        case 1: aH1 = ambientHumidity;
+              break;
+        case 2: aH2 = ambientHumidity;
+              break;
+        case 3: aH3 = ambientHumidity;
+              break;
+        case 4: aH4 = ambientHumidity;
+              break;
+        case 5: aH5 = ambientHumidity;
+              break;
+      }
 
 
       LastReading = millis();
@@ -311,6 +372,74 @@ void loop()
     Serial.printf("Temperature %.2f C %.2f F ", sensor.celsius(), sensor.fahrenheit());
     Particle.publish("temperature", String(sensor.fahrenheit()), PRIVATE);
 
+    uint8_t addr[8];
+    sensor.addr(addr);
+    sprintf(ROMCODE, "%02X%02X%02X%02X%02X%02X%02X%02X",
+    addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7]
+    );
+
+    const char greenhouseROM[] = "2874722A070000A5";
+    const char waterROM[] = "285DE726070000F2";
+
+      if (strcmp(ROMCODE,greenhouseROM) == 0) {
+        greenhouseTemp = sensor.fahrenheit();
+
+        switch(currentTens_place) {
+            case 0: gT0 = greenhouseTemp;
+                    break;
+            case 1: gT1 = greenhouseTemp;
+                    break;
+            case 2: gT2 = greenhouseTemp;
+                    break;
+            case 3: gT3 = greenhouseTemp;
+                    break;
+            case 4: gT4 = greenhouseTemp;
+                    break;
+            case 5: gT5 = greenhouseTemp;
+                    break;
+        }
+      //return;
+      } else if (strcmp(ROMCODE,waterTemp) == 0) {
+        waterTemp = sensor.fahrenheit();
+
+        switch (currentTens_place) {
+          case 0: wT0 = waterTemp;
+                break;
+          case 1: wT1 = waterTemp;
+                break;
+          case 2: wT2 = waterTemp;
+                break;
+          case 3: wT3 = waterTemp;
+                break;
+          case 4: wT4 = waterTemp;
+                break;
+          case 5: wT5 = waterTemp;
+                break;
+        }
+        //return;
+      } else if (strcmp(ROMCODE,heattankROM) == 0) {
+        heattankTemp = sensor.fahrenheit();
+
+        switch (currentTens_place) {
+          case 0: hT0 = heattankTemp;
+                break;
+          case 1: hT1 = heattankTemp;
+                break;
+          case 2: hT2 = heattankTemp;
+                break;
+          case 3: hT3 = heattankTemp;
+                break;
+          case 4: hT4 = heattankTemp;
+                break;
+          case 5: hT5 = heattankTemp;
+                break;
+      }
+      //return;
+      } else {
+        Particle.publish("New ROMCODE", ROMCODE);
+      }
+    
+  
     // Additional info useful while debugging
     printDebugInfo();
 
