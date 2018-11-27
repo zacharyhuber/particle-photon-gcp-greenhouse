@@ -380,6 +380,7 @@ void loop()
 
     const char greenhouseROM[] = "2874722A070000A5";
     const char waterROM[] = "285DE726070000F2";
+    const char heattankROM[] = "";
 
       if (strcmp(ROMCODE,greenhouseROM) == 0) {
         greenhouseTemp = sensor.fahrenheit();
@@ -399,7 +400,7 @@ void loop()
                     break;
         }
       //return;
-      } else if (strcmp(ROMCODE,waterTemp) == 0) {
+      } else if (strcmp(ROMCODE,waterROM) == 0) {
         waterTemp = sensor.fahrenheit();
 
         switch (currentTens_place) {
@@ -523,7 +524,7 @@ void printDebugInfo() {
 
   const char greenhouseROM[] = "2874722A070000A5";
   const char waterROM[] = "285DE726070000F2";
-  //const char heattankROM[] = "";
+  const char heattankROM[] = "";
 //  sprintf(greenhouseROM, "%02X%02X%02X%02X%02X%02X%02X%02X",
 //    0x28, 0x74, 0x72, 0x2A, 0x07, 0x00, 0x00, 0xA5
 //  );
