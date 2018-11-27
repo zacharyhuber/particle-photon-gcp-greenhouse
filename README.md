@@ -1,10 +1,10 @@
-# photon-gcp-greenhouse
+# Particle_to_GCP_Greenhouse
 
-A Particle project named photon-gcp-greenhouse
+A Particle project named Particle_to_GCP_Greenhouse
 
 ## Welcome to your project!
 
-Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for photon-gcp-greenhouse.
+Every new Particle project is composed of 3 important elements that you'll see have been created in your project directory for Particle_to_GCP_Greenhouse.
 
 #### ```/src``` folder:  
 This is the source folder that contains the firmware files for your project. It should *not* be renamed. 
@@ -24,7 +24,7 @@ This is the file that specifies the name and version number of the libraries tha
 If you would like add additional files to your application, they should be added to the `/src` folder. All files in the `/src` folder will be sent to the Particle Cloud to produce a compiled binary.
 
 #### Projects with external libraries
-If your project includes a library that has not been registered in the Particle libraries system, you should create a new folder named `/lib/<libraryname>/src` under `/<project dir>` and add the `.h` and `.cpp` files for your library there. All contents of the `/lib` folder and subfolders will also be sent to the Cloud for compilation.
+If your project includes a library that has not been registered in the Particle libraries system, you should create a new folder named `/lib/<libraryname>/src` under `/<project dir>` and add the `.h`, `.cpp` & `library.properties` files for your library there. Read the [Firmware Libraries guide](https://docs.particle.io/guide/tools-and-features/libraries/) for more details on how to develop libraries. Note that all contents of the `/lib` folder and subfolders will also be sent to the Cloud for compilation.
 
 ## Compiling your project
 

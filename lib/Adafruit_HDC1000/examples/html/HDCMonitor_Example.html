@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+<!-- Program runs in a browser to get published Particle Cloud HDCUpdates and
+    shows values onscreen with JustGages    -->
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+<script type="text/javascript" src="http://cdn.jsdelivr.net/particle-api-js/5/particle.min.js"></script>
+<script type="text/javascript" src="http://cdn.jsdelivr.net/raphael/2.1.4/raphael-min.js"></script>
+<script type="text/javascript" src="http://cdn.jsdelivr.net/justgage/1.0.1/justgage.js"></script>
+
+<style>
+.meters {
+    border: 1px solid black;
+    width:  240px;
+    height: 240px;
+}
+
+</style>
+
+<script>
+// var Particle = require('particle-api-js');
+var particle = new Particle();
+var accessToken = "YourParticleAccessTokenHere";
+var Photon1   = "Your_Device1_ID_Here";
+var Electron2 = "Your_Device2_ID_Here";
+
+function refreshGauges(data) {
+  console.log("Updating gauges . . .");
+  var update = JSON.parse(data);
+  battery_gauge.refresh(update["1"]);   // syntax error if update.1 used
+  hoursalive_gauge.refresh(update["2"]);
+  humidity_gauge.refresh(update["3"]);
+  maxtemp_gauge.refresh(update["4"]);
+  mintemp_gauge.refresh(update["5"]);
+  tempF_gauge.refresh(update["6"]);
+}
+
+function getHDCUpdates() {
+  particle.getEventStream({ deviceId: Photon1, name: 'HDCUpdate', auth: accessToken }).then(function (stream) {
+    stream.on('event', function(data) {
+      console.log("Event: " + (data.data));  // data.data is json format
+      refreshGauges(data.data);
+    });
+    stream.on('error', function(err) {
+      console.log("Network Error:" + (err));
+      // trigger full reconnection here
+    });
+  }, function(err) {
+    // initial connection error
+  })
+}
+
+</script>
+</head>
+
+<body>
+
+<table align="center">
+<caption>HDC Monitor</caption>
+<tr>
+<td class="meters"><div id="tempFGauge" ></div></td>
+<td class="meters"><div id="humidityGauge" ></div></td>
+</tr>
+<tr>
+<td class="meters"><div id="mintempGauge" ></div></td>
+<td class="meters"><div id="maxtempGauge" ></div></td>
+</tr>
+<tr>
+<td class="meters"><div id="batteryGauge" ></div></td>
+<td class="meters"><div id="hoursaliveGauge" ></div></td>
+</tr>
+<tr>
+
+</table>
+
+<script>
+
+var humidity_gauge = new JustGage({
+    id: "humidityGauge",
+    decimals: true,
+    value: 0,
+    min: 0,
+    max: 100,
+    title: "Humidity",
+    label: "%"
+});
+
+var hoursalive_gauge = new JustGage({
+    id: "hoursaliveGauge",
+    decimals: false,
+    value: 0,
+    min: 0,
+    max: 2880,
+    levelColors: ["#00FF00", "#FFFF00", "#FF0000"],
+    title: "Alive!",
+    label: "hours"
+});
+
+var tempF_gauge = new JustGage({
+    id: "tempFGauge",
+    decimals: true,
+    value: 0,
+    min: -10,
+    max: 100.4,
+    levelColors: ["#00FF00", "#FFFF00", "#FF0000"],
+    title: "TempF",
+    label: "deg F"
+});
+
+var mintemp_gauge = new JustGage({
+    id: "mintempGauge",
+    decimals: true,
+    value: 0,
+    min: -10,
+    max: 100.4,
+    levelColors: ["#00FF00", "#FFFF00", "#FF0000"],
+    title: "MinTemp",
+    label: "deg F"
+});
+
+var maxtemp_gauge = new JustGage({
+    id: "maxtempGauge",
+    decimals: true,
+    value: 0,
+    min: -10,
+    max: 100.4,
+    levelColors: ["#00FF00", "#FFFF00", "#FF0000"],
+    title: "MaxTemp",
+    label: "deg F"
+});
+
+var battery_gauge = new JustGage({
+    id: "batteryGauge",
+    value: 0,
+    min: 0,
+    max: 1,
+    levelColors: ["#00FF00", "#FFFF00", "#FF0000"],
+    title: "Battery Low",
+    label: "False/True"
+});
+
+id = setInterval(getHDCUpdates, 3600000); // make sure updates hourly
+getHDCUpdates();
+
+</script>
+
+</body>
+</html>

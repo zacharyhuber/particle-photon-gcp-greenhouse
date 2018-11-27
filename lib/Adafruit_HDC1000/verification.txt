@@ -1,0 +1,14 @@
+How to verify this library
+
+Flash the HDC1000test.ino example to a Photon/Electron
+connect the usb port to your computer usb and monitor humidity/temp
+readings in a Terminal or serial monitor in Desktop IDE (Particle Dev)
+
+Flash the HDCMonitor_Example.ino to a Photon/Electron
+To watch the events: particle subscribe mine
+Run HDCMonitor_Example.html in a browser 
+ to see updates of on-screen JustGages
+You can set up a webhook integration in Particle Console selecting 'custom JSON'
+ and pasting text from ParticleWebhook_ThingSpeak_CustomJSON for ThingSpeak
+ and update a CHANNEL to monitor humidity/temp readings graphically!
+
