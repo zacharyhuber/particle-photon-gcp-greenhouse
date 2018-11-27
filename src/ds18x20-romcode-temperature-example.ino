@@ -276,7 +276,7 @@ void loop()
             case 5: ts5 = Time.now();
                     break;
       }
-      }
+      //}
       
         // Get a new sensor event
       sensors_event_t event;
@@ -370,7 +370,7 @@ void loop()
   if (sensor.read()) {
     // Do something cool with the temperature
     Serial.printf("Temperature %.2f C %.2f F ", sensor.celsius(), sensor.fahrenheit());
-    Particle.publish("temperature", String(sensor.fahrenheit()), PRIVATE);
+    //Particle.publish("temperature", String(sensor.fahrenheit()), PRIVATE);
 
     uint8_t addr[8];
     sensor.addr(addr);
@@ -441,7 +441,7 @@ void loop()
     
   
     // Additional info useful while debugging
-    printDebugInfo();
+    //printDebugInfo();
 
   // If sensor.read() didn't return true you can try again later
   // This next block helps debug what's wrong.
