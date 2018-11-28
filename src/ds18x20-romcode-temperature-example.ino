@@ -342,32 +342,32 @@ void loop()
 
       switch (currentTens_place) {
         case 0: aT0 = ambientTempF;
-              break;
+                break;
         case 1: aT1 = ambientTempF;
-              break;
+                break;
         case 2: aT2 = ambientTempF;
-              break;
+                break;
         case 3: aT3 = ambientTempF;
-              break;
+                break;
         case 4: aT4 = ambientTempF;
-              break;
+                break;
         case 5: aT5 = ambientTempF;
-              break;
+                break;
       }
 
       switch (currentTens_place) {
         case 0: aH0 = ambientHumidity;
-              break;
+                break;
         case 1: aH1 = ambientHumidity;
-              break;
+                break;
         case 2: aH2 = ambientHumidity;
-              break;
+                break;
         case 3: aH3 = ambientHumidity;
-              break;
+                break;
         case 4: aH4 = ambientHumidity;
-              break;
+                break;
         case 5: aH5 = ambientHumidity;
-              break;
+                break;
       }
 
 
@@ -388,7 +388,7 @@ void loop()
 
     const char greenhouseROM[] = "2874722A070000A5";
     const char waterROM[] = "285DE726070000F2";
-    const char heattankROM[] = "";
+    const char heattankROM[] = "28F1FA29070000D9";
 
       if (strcmp(ROMCODE,greenhouseROM) == 0) {
         greenhouseTemp = sensor.fahrenheit();
@@ -413,17 +413,17 @@ void loop()
 
         switch (currentTens_place) {
           case 0: wT0 = waterTemp;
-                break;
+                  break;
           case 1: wT1 = waterTemp;
-                break;
+                  break;
           case 2: wT2 = waterTemp;
-                break;
+                  break;
           case 3: wT3 = waterTemp;
-                break;
+                  break;
           case 4: wT4 = waterTemp;
-                break;
+                  break;
           case 5: wT5 = waterTemp;
-                break;
+                  break;
         }
         //return;
       } else if (strcmp(ROMCODE,heattankROM) == 0) {
@@ -431,17 +431,17 @@ void loop()
 
         switch (currentTens_place) {
           case 0: hT0 = heattankTemp;
-                break;
+                  break;
           case 1: hT1 = heattankTemp;
-                break;
+                  break;
           case 2: hT2 = heattankTemp;
-                break;
+                  break;
           case 3: hT3 = heattankTemp;
-                break;
+                  break;
           case 4: hT4 = heattankTemp;
-                break;
+                  break;
           case 5: hT5 = heattankTemp;
-                break;
+                  break;
       }
       //return;
       } else {
@@ -476,19 +476,19 @@ void loop()
     //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
     switch (currentTens_place) {
       case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
-      break;
+              break;
       case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
-      break;
+              break;
       case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
-      break;
+              break;
       case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f}", ts2, L2, wT2, gT2, hT2, aT2, aH2, ts3, L3, wT3, gT3, hT3, aT3, aH3);
-      break;
+              break;
       case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
-      break;
+              break;
       case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f}", ts4, L4, wT4, gT4, hT4, aT4, aH4, ts5, L5, wT5, gT5, hT5, aT5, aH5);
-      break;
+              break;
       default: Particle.publish("Batch timing error", NULL);
-      break;
+              break;
     }
     // only two of these strings can fit in the 255 bytes that Particle.publish is limited to.
     // Figure out how to fit more data in a signle publish!
@@ -532,7 +532,7 @@ void printDebugInfo() {
 
   const char greenhouseROM[] = "2874722A070000A5";
   const char waterROM[] = "285DE726070000F2";
-  const char heattankROM[] = "";
+  const char heattankROM[] = "28F1FA29070000D9";
 //  sprintf(greenhouseROM, "%02X%02X%02X%02X%02X%02X%02X%02X",
 //    0x28, 0x74, 0x72, 0x2A, 0x07, 0x00, 0x00, 0xA5
 //  );
