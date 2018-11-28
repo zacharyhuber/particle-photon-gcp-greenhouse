@@ -182,7 +182,7 @@ void displaySensorDetails(void)
   Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" lux");
   Serial.println("------------------------------------");
   Serial.println("");
-  Particle.publish("Sensor: ", sensor.name);
+  Particle.publish("Sensor: ", sensor.name, 60, PRIVATE);
   delay(500);
 }
 
@@ -289,7 +289,7 @@ void loop()
       {
           Serial.print(event.light); Serial.print(" lux");
           lux = event.light;
-          Particle.publish("lux", String(event.light));
+          //~photon code~Particle.publish("lux", String(event.light), 60, PRIVATE);
           Serial.println("      ...publish successful.");
       }
       else
@@ -297,7 +297,7 @@ void loop()
           /* If event.light = 0 lux the sensor is probably saturated
               and no reliable data could be generated! */
           Serial.println("Sensor overload");
-          Particle.publish("Sensor overload");
+          //~photon code~Particle.publish("Sensor overload");
           lux = 0;
       }
       switch (currentTens_place) {
@@ -330,7 +330,7 @@ void loop()
       if (hdc.batteryLOW()) Serial.println("TRUE");
       else Serial.println("FALSE");
 
-      Particle.publish("ambientTempF & ambientHumidity", String(ambientTempF) + String(ambientHumidity));
+      //~photon code~Particle.publish("ambientTempF & ambientHumidity", String(ambientTempF) + String(ambientHumidity), 60, PRIVATE);
 
       switch (currentTens_place) {
         case 0: aT0 = ambientTempF;
@@ -437,7 +437,7 @@ void loop()
       }
       //return;
       } else {
-        Particle.publish("New ROMCODE", ROMCODE);
+        Particle.publish("New ROMCODE", ROMCODE, 60, PRIVATE, WITH_ACK);
       }
     
   
@@ -485,7 +485,7 @@ void loop()
     // only two of these strings can fit in the 255 bytes that Particle.publish is limited to.
     // Figure out how to fit more data in a signle publish!
     //sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
-    Particle.publish("sensor_data_toGCP", googleString);
+    Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK);
 
     LastPublish = millis();
   }
@@ -531,16 +531,16 @@ void printDebugInfo() {
   //ROMCODE == "2874722A070000A5\0"
   if (strcmp(ROMCODE,greenhouseROM) == 0) {
       greenhouseTemp = sensor.fahrenheit();
-      Particle.publish("greenhouseTemp", String(sensor.fahrenheit()));
+      Particle.publish("greenhouseTemp", String(sensor.fahrenheit()), 60, PRIVATE);
   } else if (strcmp(ROMCODE,waterROM) == 0) {
       waterTemp = sensor.fahrenheit();
-      Particle.publish("waterTemp", String(sensor.fahrenheit()));
+      Particle.publish("waterTemp", String(sensor.fahrenheit()), 60, PRIVATE);
   } else if (strcmp(ROMCODE,heattankROM) == 0) {
       heattankTemp = sensor.fahrenheit();
-      Particle.publish("heattankTemp", String(sensor.fahrenheit()));
+      Particle.publish("heattankTemp", String(sensor.fahrenheit()), 60, PRIVATE);
   } else {
       //Particle.publish("debug", greenhouseTemp);
-      Particle.publish("new ROMCODE", ROMCODE);
+      Particle.publish("new ROMCODE", ROMCODE, 60, PRIVATE);
   }
 
 
@@ -549,7 +549,7 @@ void printDebugInfo() {
     " ROM=%02X%02X%02X%02X%02X%02X%02X%02X: %.2f",
     addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7], sensor.fahrenheit()
   );
-  Particle.publish("DS18B20 Probe Temperature", ds18String);
+  //~photon code~Particle.publish("DS18B20 Probe Temperature", ds18String, 60, PRIVATE);
 
   // Print the raw sensor data
   uint8_t data[9];
