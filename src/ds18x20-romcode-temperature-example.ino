@@ -80,7 +80,7 @@ retained uint32_t ts5;
     //=========================================================================
 
 /*
-I/O setup:
+I/O setup: 
 These made it easy to just 'plug in' my 18B20
 
 D3 - 1-wire ground, or just use regular pin and comment out below.
@@ -89,9 +89,17 @@ D5 - 1-wire power, ditto ground comment.
 */
 #include "DS18.h"
 
-DS18 sensor(A3);
+DS18 sensor(D6);
     //=========================================================================
 
+
+/*
+I/O setup:
+These made it easy to just 'plug in' my I2C sensors
+
+D2 - I2C ground, or just use regular pin and comment out below.
+D3 - I2C power, ditto ground comment.
+*/
 #include "Adafruit_HDC1000.h"
 
 Adafruit_HDC1000 hdc = Adafruit_HDC1000();
