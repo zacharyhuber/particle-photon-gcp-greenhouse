@@ -6,7 +6,7 @@
  */
 
 // This makes sure the Photon is using the best wireless signal.
-STARTUP(WiFi.selectAntenna(ANT_AUTO));
+//~photon code~STARTUP(WiFi.selectAntenna(ANT_AUTO));
     //=========================================================================
 // reset the system after 60 seconds if the application is unresponsive
 ApplicationWatchdog wd(60000, System.reset);
