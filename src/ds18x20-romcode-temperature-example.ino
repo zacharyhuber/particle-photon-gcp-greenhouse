@@ -145,14 +145,17 @@ Adafruit_TSL2561_Unified tsl = Adafruit_TSL2561_Unified(TSL2561_ADDR_FLOAT, 1234
 
 const int SensorFrequency = 4000;  // I2C bus sensor polling frequency
 unsigned long LastReading = 4000;
+
+bool I2C_sensors_finished = false;
+bool ONEWIRE_sensors_finished = false;
+
     //=========================================================================
 
 //const int PublishFrequency = 1200000; // gcp upload frequency
 //unsigned long LastPublish = 20000;
 
-char googleString[255]; // sensor_data_toGCP JSON string, 255 bytes max for Particle.publish data object
+char googleString[255]; // sensor_data_toGCP JSON string, 255 bytes max for Particle.publish data object (400+ bytes after DeviceOS v0.8.0)
     //=========================================================================
-
 
 // Variable Declarations
 double waterTemp = 0;
@@ -339,14 +342,12 @@ void setup()
 
 void loop()
 {
-  delay(5000);
+  //delay(5000); // 5 second pause provides window to manually begin a OTA flash remotely.  Should use Particle Product instead.
+  int currentTens_place = (Time.minute() / 10);
 
-  int currentMinute = Time.minute();
-  int currentTens_place = currentMinute / 10;
-
-  unsigned long CurrentMillis = millis();
-
-  if ((CurrentMillis - LastReading) > SensorFrequency)
+  //unsigned long CurrentMillis = millis();
+  //if ((CurrentMillis - LastReading) > SensorFrequency)
+  if (I2C_sensors_finished == false)
   {
       switch (currentTens_place) {
             case 0: ts0 = Time.now();
@@ -449,7 +450,8 @@ void loop()
       }
 
 
-      LastReading = millis();
+      I2C_sensors_finished = true;
+      //LastReading = millis();
   }
 
   // Read the next available 1-Wire temperature sensor
@@ -538,6 +540,7 @@ void loop()
     // Next time read() is called the first sensor is read again
     if (sensor.searchDone()) {
       Serial.println("No more addresses.");
+      ONEWIRE_sensors_finished = true;
       // Avoid excessive printing when no sensors are connected
       delay(250);
 
@@ -549,7 +552,7 @@ void loop()
   Serial.println();
 
   // Conditional statement for Publishing to Google Cloud Platform: NEED TO UPDATE WITH A FLAG FOR ONEWIRE ADDRESSES BECAUSE THEY USE void loop() to capture more than one sensor reading
-  if ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5)) {
+  if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
 
   //if ((CurrentMillis - LastPublish) > PublishFrequency) {
     //*********************************
@@ -571,6 +574,9 @@ void loop()
       default: Particle.publish("Batch timing error", NULL);
               break;
     }
+
+    I2C_sensors_finished = false;
+    ONEWIRE_sensors_finished = false; 
     // only two of these strings can fit in the 255 bytes that Particle.publish is limited to.
     // Figure out how to fit more data in a signle publish!  --oh, oh, I know! DeviceOS v0.8.0 supports up to 4**bytes of data!
     //sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
@@ -590,6 +596,17 @@ void loop()
      // Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK);
 
     //LastPublish = millis();
+  }
+
+  if (I2C_sensors_finished == true && ONEWIRE_sensors_finished == true) {
+          // all retained variables should have been updated so go to SLEEP_MODE_DEEP until next measurement
+          set_wake_time();
+
+          I2C_sensors_finished = false;
+          ONEWIRE_sensors_finished = false;
+          
+          Serial.println("sensors updated ...going to sleep");
+          System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
   }
 }
 
