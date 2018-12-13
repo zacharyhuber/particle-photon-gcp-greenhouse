@@ -190,8 +190,8 @@ void displaySensorDetails(void)
   Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" lux");
   Serial.println("------------------------------------");
   Serial.println("");
-  Particle.publish("Sensor: ", sensor.name, 60, PRIVATE);
-  delay(500);
+  //~photon code~Particle.publish("Sensor: ", sensor.name, 60, PRIVATE);
+  //~photon code~delay(500);
 }
 
 /**************************************************************************/
@@ -213,14 +213,14 @@ void configureSensor(void)
 
   /* Update these values depending on what you've set above! */
   Serial.println("------------------------------------");
-  Serial.print  ("Gain:         "); Serial.println("3x gain");
+  Serial.print  ("Gain:         "); Serial.println("1x gain");
   Serial.print  ("Timing:       "); Serial.println("402 ms");
   Serial.println("------------------------------------");
 }
 
 /**************************************************************************/
 /*
-    Set up System.sleep timing
+    Set up System.sleep timing to wake up at the next 10 minute mark: x:00, x:10, x:20, x:30, x:40, x:50.
 */
 /**************************************************************************/
 
@@ -269,7 +269,7 @@ void set_wake_time(void)
 
 /**************************************************************************/
 /*
-    Configures the gain and integration time for the TSL2561
+    Retries the Particle.publish(sensor_data_toGCP) twice more while in a "pause" sleep before a SLEEP_MODE_DEEP/reset.
 */
 /**************************************************************************/
 void retry_publish(void) 
@@ -297,7 +297,6 @@ void retry_publish(void)
         // Final failure code goes here ///
 }
 
-
 void setup()
 {
   Serial.begin(9600);
@@ -310,14 +309,14 @@ void setup()
 
 
   Serial.println("Light Sensor Test"); Serial.println("");
-  Particle.publish("Testing TSL2561"); //REMOVE FROM setup() for semi-automatic particle.connect control
+  //~photon code~Particle.publish("Testing TSL2561"); //REMOVE FROM setup() for semi-automatic particle.connect control
 
   // Initialise the sensor
   if(!tsl.begin())
   {
     // There was a problem detecting the ADXL345 ... check your connections
     Serial.print("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!");
-    Particle.publish("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!"); //REMOVE FROM setup() for semi-automatic particle.connect control
+    Particle.publish("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!"); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
   }
 
   // Display some basic information on this sensor
@@ -332,7 +331,7 @@ void setup()
   if(!hdc.begin())
   {
       Serial.print("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
-      Particle.publish("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
+      //~photon code~Particle.publish("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
   }
   delay(15);    // let the chip initialize
 
@@ -549,9 +548,8 @@ void loop()
   }
   Serial.println();
 
-  
+  // Conditional statement for Publishing to Google Cloud Platform: NEED TO UPDATE WITH A FLAG FOR ONEWIRE ADDRESSES BECAUSE THEY USE void loop() to capture more than one sensor reading
   if ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5)) {
-  
 
   //if ((CurrentMillis - LastPublish) > PublishFrequency) {
     //*********************************
