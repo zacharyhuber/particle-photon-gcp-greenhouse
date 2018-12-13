@@ -147,8 +147,8 @@ const int SensorFrequency = 4000;  // I2C bus sensor polling frequency
 unsigned long LastReading = 4000;
     //=========================================================================
 
-const int PublishFrequency = 1200000; // gcp upload frequency
-unsigned long LastPublish = 20000;
+//const int PublishFrequency = 1200000; // gcp upload frequency
+//unsigned long LastPublish = 20000;
 
 char googleString[255]; // sensor_data_toGCP JSON string, 255 bytes max for Particle.publish data object
     //=========================================================================
@@ -216,6 +216,85 @@ void configureSensor(void)
   Serial.print  ("Gain:         "); Serial.println("3x gain");
   Serial.print  ("Timing:       "); Serial.println("402 ms");
   Serial.println("------------------------------------");
+}
+
+/**************************************************************************/
+/*
+    Set up System.sleep timing
+*/
+/**************************************************************************/
+
+int nextTEN = 42;
+int wakeupHour = 42;
+long wakeSeconds = 42;
+//bool goodnight = FALSE;  // Use this only if the Particle.publish calls are being cut off by sleep.
+
+
+void set_wake_time(void)  
+{
+    int currentHour = Time.hour();
+    Serial.print("currentHour is ");
+    Serial.println(currentHour);
+    int currentMinute = Time.minute();
+    int currentTEN = currentMinute / 10;
+    // this should be set up as a series of else if statements, probably
+    if (currentTEN == 5) {
+        nextTEN = 0;
+        if (currentHour == 23) {
+            wakeupHour = 0;
+        }
+        else { wakeupHour = currentHour + 1; }
+    }
+    else {
+        nextTEN = currentTEN + 1;
+        wakeupHour = currentHour;
+    }
+    int wakeupMinute = nextTEN * 10;
+
+    Serial.print("Wake-up time is: ");
+    Serial.print(wakeupHour);
+    Serial.print(":");
+    Serial.println(wakeupMinute);
+    // ********* Removed for cellular data efficiency**************/ Particle.publish("Wake-up time is: ", String(wakeupHour) + ":" + String(wakeupMinute));
+
+    int wakeTime = wakeupMinute - currentMinute;
+    if (wakeupMinute == 0) { wakeTime = 60 - currentMinute; }
+
+    Serial.print("Minutes to wake-up: ");
+    Serial.println(wakeTime);
+    // ********* Removed for cellular data efficiency**************/ Particle.publish("Minutes to wake-up: ", String(wakeTime));
+    //Serial.println("Particle.publish sent");
+    wakeSeconds = wakeTime * 60;
+}
+
+/**************************************************************************/
+/*
+    Configures the gain and integration time for the TSL2561
+*/
+/**************************************************************************/
+void retry_publish(void) 
+{
+        set_wake_time();
+        System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        
+        Serial.print("attempting to resend sensor_data_toGCP");
+        if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
+                Serial.println(" Success!");
+                return;
+        }
+        Serial.print("...retry #1 failed");
+
+        System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+
+        Serial.print("...last attempt to resend sensor_data_toGCP");
+        
+        if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
+                Serial.println(" Success!");
+                return;
+        }
+        Serial.print(" FAILED TO SEND sensor_data_toGCP");
+
+        // Final failure code goes here ///
 }
 
 
@@ -470,7 +549,11 @@ void loop()
   }
   Serial.println();
 
-  if ((CurrentMillis - LastPublish) > PublishFrequency) {
+  
+  if ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5)) {
+  
+
+  //if ((CurrentMillis - LastPublish) > PublishFrequency) {
     //*********************************
     // format the sensor data as JSON, so it can be easily parsed
     //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
@@ -491,11 +574,24 @@ void loop()
               break;
     }
     // only two of these strings can fit in the 255 bytes that Particle.publish is limited to.
-    // Figure out how to fit more data in a signle publish!
+    // Figure out how to fit more data in a signle publish!  --oh, oh, I know! DeviceOS v0.8.0 supports up to 4**bytes of data!
     //sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
-    Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK);
+    
+    if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
+            set_wake_time();
+            Serial.print("sensor_data_toGCP published successfully");
+            Serial.println("  ...Going to Sleep");
+            System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+    } else {
+            Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
+            retry_publish();
+            set_wake_time();
+            System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+    }
+    
+     // Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK);
 
-    LastPublish = millis();
+    //LastPublish = millis();
   }
 }
 
