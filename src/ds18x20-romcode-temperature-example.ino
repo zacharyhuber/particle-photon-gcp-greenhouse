@@ -2,14 +2,19 @@
  * Project photon-gcp-greenhouse
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
- * Date:
+ * Date: Jan 11, 2019
  */
 
+// Semi-Automatic Mode allows collection of data without a network connection.
+// Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
+//SYSTEM_MODE(SEMI_AUTOMATIC);
+
+    //=========================================================================
 // This makes sure the Photon is using the best wireless signal.
 //~photon code~STARTUP(WiFi.selectAntenna(ANT_AUTO));
     //=========================================================================
 // reset the system after 60 seconds if the application is unresponsive
-ApplicationWatchdog wd(60000, System.reset);
+ApplicationWatchdog wd(120000, System.reset);
 // EXAMPLE USAGE
 /*
 void loop() {
@@ -525,6 +530,7 @@ void loop()
       }
       //return;
       } else {
+        //Particle.connect();
         Particle.publish("New ROMCODE", ROMCODE, 60, PRIVATE, WITH_ACK);
       }
     
@@ -571,16 +577,18 @@ void loop()
               break;
       case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f}", ts4, L4, wT4, gT4, hT4, aT4, aH4, ts5, L5, wT5, gT5, hT5, aT5, aH5);
               break;
-      default: Particle.publish("Batch timing error", NULL);
+      default: //Particle.connect();
+                Particle.publish("Batch timing error", NULL);
               break;
     }
 
     I2C_sensors_finished = false;
     ONEWIRE_sensors_finished = false; 
     // only two of these strings can fit in the 255 bytes that Particle.publish is limited to.
-    // Figure out how to fit more data in a signle publish!  --oh, oh, I know! DeviceOS v0.8.0 supports up to 4**bytes of data!
+    // Figure out how to fit more data in a signle publish!  --oh, oh, I know! DeviceOS v0.8.0 supports up to 622 bytes of data!
     //sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
     
+    //Particle.connect();
     if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
             set_wake_time();
             Serial.print("sensor_data_toGCP published successfully");
@@ -593,6 +601,7 @@ void loop()
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
     }
     
+     // Particle.connect();
      // Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK);
 
     //LastPublish = millis();
