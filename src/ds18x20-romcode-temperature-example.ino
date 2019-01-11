@@ -4,6 +4,9 @@
  * Author: Zack Huber
  * Date: Jan 11, 2019
  */
+// Product ID and Version for Particle Product firmware deployment
+PRODUCT_ID(8620);
+PRODUCT_VERSION(001);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
