@@ -6,7 +6,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(8620);
-PRODUCT_VERSION(001);
+PRODUCT_VERSION(003);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -596,10 +596,10 @@ void loop()
             set_wake_time();
             Serial.print("sensor_data_toGCP published successfully");
             Serial.println("  ...Going to Sleep");
-            if ((Time.hour() == 10) && (currentTens_place == 0)) {
+            // TESTING---------->if ((Time.hour() == 10) && (currentTens_place == 0)) {
                 // Give DeviceOS time to check for and download firmware updates (at 10:00 --maybe should add a check for solar power and battery voltage)
                 delay(60000); 
-            }
+            // TESTING---------->}
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
