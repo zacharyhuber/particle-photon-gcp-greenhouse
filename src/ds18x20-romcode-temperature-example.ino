@@ -2,11 +2,11 @@
  * Project photon-gcp-greenhouse
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
- * Date: Jan 11, 2019
+ * Date: Jan 12, 2019
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(8620);
-PRODUCT_VERSION(001);
+PRODUCT_VERSION(002);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -50,7 +50,7 @@ retained double wT3;
 retained double wT4;
 retained double wT5;
 
-retained double gT0; // ??? is this? why is it showing up as a Class method?
+retained double gT0;
 retained double gT1;
 retained double gT2;
 retained double gT3;
@@ -84,6 +84,20 @@ retained uint32_t ts2;
 retained uint32_t ts3;
 retained uint32_t ts4;
 retained uint32_t ts5;
+
+retained float 3vB0;
+retained float 3vB1;
+retained float 3vB2;
+retained float 3vB3;
+retained float 3vB4;
+retained float 3vB5;
+
+retained uint16_t 12vB0;
+retained uint16_t 12vB1;
+retained uint16_t 12vB2;
+retained uint16_t 12vB3;
+retained uint16_t 12vB4;
+retained uint16_t 12vB5;
 
     //=========================================================================
 
@@ -563,22 +577,40 @@ void loop()
   // Conditional statement for Publishing to Google Cloud Platform: NEED TO UPDATE WITH A FLAG FOR ONEWIRE ADDRESSES BECAUSE THEY USE void loop() to capture more than one sensor reading
   if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
 
+      FuelGauge fuel;
+      float 3voltBatteryVoltage = fuel.getVCell();
+      
+      switch (currentTens_place) {
+          case 0: 3vB0 = 3voltBatteryVoltage;
+                break;
+          case 1: 3vB1 = 3voltBatteryVoltage;
+                break;
+          case 2: 3vB2 = 3voltBatteryVoltage;
+                break;
+          case 3: 3vB3 = 3voltBatteryVoltage;
+                break;
+          case 4: 3vB4 = 3voltBatteryVoltage;
+                break;
+          case 5: 3vB5 = 3voltBatteryVoltage;
+                break;
+      }
+
   //if ((CurrentMillis - LastPublish) > PublishFrequency) {
     //*********************************
     // format the sensor data as JSON, so it can be easily parsed
-    //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
+    //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, 3voltBatteryVoltage, Time.now());
     switch (currentTens_place) {
-      case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
+      case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, 3voltBatteryVoltage, Time.now());
               break;
-      case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
+      case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"3vB0\":%f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"3vB1\":%f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, 3vB0, ts1, L1, wT1, gT1, hT1, aT1, aH1, 3vB1);
               break;
-      case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
+      case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, 3voltBatteryVoltage, Time.now());
               break;
-      case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f}", ts2, L2, wT2, gT2, hT2, aT2, aH2, ts3, L3, wT3, gT3, hT3, aT3, aH3);
+      case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"3vB2\":%f,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"3vB3\":%f}", ts2, L2, wT2, gT2, hT2, aT2, aH2, 3vB2, ts3, L3, wT3, gT3, hT3, aT3, aH3, 3vB3);
               break;
-      case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, Time.now());
+      case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, 3voltBatteryVoltage, Time.now());
               break;
-      case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f}", ts4, L4, wT4, gT4, hT4, aT4, aH4, ts5, L5, wT5, gT5, hT5, aT5, aH5);
+      case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"3vB4\":%f,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"3vB5\":%f}", ts4, L4, wT4, gT4, hT4, aT4, aH4, 3vB4, ts5, L5, wT5, gT5, hT5, aT5, aH5, 3vB5);
               break;
       default: //Particle.connect();
                 Particle.publish("Batch timing error", NULL);
