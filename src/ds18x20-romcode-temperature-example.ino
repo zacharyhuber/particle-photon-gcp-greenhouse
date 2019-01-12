@@ -85,19 +85,19 @@ retained uint32_t ts3;
 retained uint32_t ts4;
 retained uint32_t ts5;
 
-retained float 3vB0;
-retained float 3vB1;
-retained float 3vB2;
-retained float 3vB3;
-retained float 3vB4;
-retained float 3vB5;
+retained float bV3_0;
+retained float bV3_1;
+retained float bV3_2;
+retained float bV3_3;
+retained float bV3_4;
+retained float bV3_5;
 
-retained uint16_t 12vB0;
-retained uint16_t 12vB1;
-retained uint16_t 12vB2;
-retained uint16_t 12vB3;
-retained uint16_t 12vB4;
-retained uint16_t 12vB5;
+retained uint16_t bV12_0;
+retained uint16_t bV12_1;
+retained uint16_t bV12_2;
+retained uint16_t bV12_3;
+retained uint16_t bV12_4;
+retained uint16_t bV12_5;
 
     //=========================================================================
 
@@ -280,14 +280,14 @@ void set_wake_time(void)
     Serial.print(wakeupHour);
     Serial.print(":");
     Serial.println(wakeupMinute);
-    // ********* Removed for cellular data efficiency**************/ Particle.publish("Wake-up time is: ", String(wakeupHour) + ":" + String(wakeupMinute));
+    // ********* Removed for cellular data efficiency**************/ Particle.publish("Wake-up time is: ", String(wakeupHour) + ":" + String(wakeupMinute), PRIVATE);
 
     int wakeTime = wakeupMinute - currentMinute;
     if (wakeupMinute == 0) { wakeTime = 60 - currentMinute; }
 
     Serial.print("Minutes to wake-up: ");
     Serial.println(wakeTime);
-    // ********* Removed for cellular data efficiency**************/ Particle.publish("Minutes to wake-up: ", String(wakeTime));
+    // ********* Removed for cellular data efficiency**************/ Particle.publish("Minutes to wake-up: ", String(wakeTime), PRIVATE);
     //Serial.println("Particle.publish sent");
     wakeSeconds = wakeTime * 60;
 }
@@ -341,7 +341,7 @@ void setup()
   {
     // There was a problem detecting the ADXL345 ... check your connections
     Serial.print("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!");
-    Particle.publish("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!"); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
+    Particle.publish("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
   }
 
   // Display some basic information on this sensor
@@ -406,7 +406,7 @@ void loop()
           /* If event.light = 0 lux the sensor is probably saturated
               and no reliable data could be generated! */
           Serial.println("Sensor overload");
-          //~photon code~Particle.publish("Sensor overload");
+          //~photon code~Particle.publish("Sensor overload", PRIVATE);
           lux = 0;
       }
       switch (currentTens_place) {
@@ -578,42 +578,42 @@ void loop()
   if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
 
       FuelGauge fuel;
-      float 3voltBatteryVoltage = fuel.getVCell();
+      float batteryVoltage3v = fuel.getVCell();
       
       switch (currentTens_place) {
-          case 0: 3vB0 = 3voltBatteryVoltage;
+          case 0: bV3_0 = batteryVoltage3v;
                 break;
-          case 1: 3vB1 = 3voltBatteryVoltage;
+          case 1: bV3_1 = batteryVoltage3v;
                 break;
-          case 2: 3vB2 = 3voltBatteryVoltage;
+          case 2: bV3_2 = batteryVoltage3v;
                 break;
-          case 3: 3vB3 = 3voltBatteryVoltage;
+          case 3: bV3_3 = batteryVoltage3v;
                 break;
-          case 4: 3vB4 = 3voltBatteryVoltage;
+          case 4: bV3_4 = batteryVoltage3v;
                 break;
-          case 5: 3vB5 = 3voltBatteryVoltage;
+          case 5: bV3_5 = batteryVoltage3v;
                 break;
       }
 
   //if ((CurrentMillis - LastPublish) > PublishFrequency) {
     //*********************************
     // format the sensor data as JSON, so it can be easily parsed
-    //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, 3voltBatteryVoltage, Time.now());
+    //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, Time.now());
     switch (currentTens_place) {
-      case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, 3voltBatteryVoltage, Time.now());
+      case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, Time.now());
               break;
-      case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"3vB0\":%f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"3vB1\":%f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, 3vB0, ts1, L1, wT1, gT1, hT1, aT1, aH1, 3vB1);
+      case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1);
               break;
-      case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, 3voltBatteryVoltage, Time.now());
+      case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, Time.now());
               break;
-      case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"3vB2\":%f,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"3vB3\":%f}", ts2, L2, wT2, gT2, hT2, aT2, aH2, 3vB2, ts3, L3, wT3, gT3, hT3, aT3, aH3, 3vB3);
+      case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3);
               break;
-      case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, 3voltBatteryVoltage, Time.now());
+      case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, Time.now());
               break;
-      case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"3vB4\":%f,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"3vB5\":%f}", ts4, L4, wT4, gT4, hT4, aT4, aH4, 3vB4, ts5, L5, wT5, gT5, hT5, aT5, aH5, 3vB5);
+      case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5);
               break;
       default: //Particle.connect();
-                Particle.publish("Batch timing error", NULL);
+                Particle.publish("Batch timing error", NULL, PRIVATE);
               break;
     }
 
@@ -628,6 +628,10 @@ void loop()
             set_wake_time();
             Serial.print("sensor_data_toGCP published successfully");
             Serial.println("  ...Going to Sleep");
+            if ((Time.hour() == 10) && (currentTens_place == 0)) {
+                // Give DeviceOS time to check for and download firmware updates (at 10:00 --maybe should add a check for solar power and battery voltage)
+                delay(60000); 
+            }
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
@@ -702,7 +706,7 @@ void printDebugInfo() {
       heattankTemp = sensor.fahrenheit();
       Particle.publish("heattankTemp", String(sensor.fahrenheit()), 60, PRIVATE);
   } else {
-      //Particle.publish("debug", greenhouseTemp);
+      //Particle.publish("debug", greenhouseTemp, PRIVATE);
       Particle.publish("new ROMCODE", ROMCODE, 60, PRIVATE);
   }
 
