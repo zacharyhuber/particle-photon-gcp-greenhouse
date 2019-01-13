@@ -6,7 +6,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(8620);
-PRODUCT_VERSION(003);
+PRODUCT_VERSION(005);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -311,6 +311,13 @@ void retry_publish(void)
 void setup()
 {
   Serial.begin(9600);
+
+  // Register event handler to detect OTA firmware update and prevent the device from sleeping.
+  pinMode(D7, OUTPUT); // debug LED not strictly necessary
+  digitalWrite(D7, LOW); // LED set HIGH prior to OTA update
+  //System.disableUpdates();
+  System.on(firmware_update_pending, otaHandler);
+
   // Set up 'power' pins, comment out if not used! (Set up as I2C power pins on current Particle Photon board)
   pinMode(D2, OUTPUT);
   pinMode(D3, OUTPUT);
@@ -596,10 +603,10 @@ void loop()
             set_wake_time();
             Serial.print("sensor_data_toGCP published successfully");
             Serial.println("  ...Going to Sleep");
-            // TESTING---------->if ((Time.hour() == 10) && (currentTens_place == 0)) {
+            /*if ((Time.hour() == 10) && (currentTens_place == 0)) {
                 // Give DeviceOS time to check for and download firmware updates (at 10:00 --maybe should add a check for solar power and battery voltage)
-                delay(60000); 
-            // TESTING---------->}
+                delay(120000); 
+            }*****  REMOVE ABOVE CODE IF OTA UPDATES ARE WORKING  **** */
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
@@ -693,4 +700,15 @@ void printDebugInfo() {
     " data=%02X%02X%02X%02X%02X%02X%02X%02X%02X",
     data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8]
   );
+}
+
+void otaHandler() {
+    // doBeforeOTA();
+
+    //System.enableUpdates();
+    digitalWrite(D7, HIGH);
+    Particle.process();
+    delay(360000);  // Could eliminate this blocking code by using if statement to delay sleep.
+    digitalWrite(D7, LOW);
+    Particle.publish("OTA update error", PRIVATE);
 }
