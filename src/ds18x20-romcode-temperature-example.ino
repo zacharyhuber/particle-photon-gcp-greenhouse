@@ -6,8 +6,12 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(8620);
-PRODUCT_VERSION(005);
+PRODUCT_VERSION(10);
 
+// System thread allows system tasks (such as OTA updates) to continue while application code is blocking.
+SYSTEM_THREAD(ENABLED);
+
+    //=========================================================================
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
 //SYSTEM_MODE(SEMI_AUTOMATIC);
@@ -15,9 +19,10 @@ PRODUCT_VERSION(005);
     //=========================================================================
 // This makes sure the Photon is using the best wireless signal.
 //~photon code~STARTUP(WiFi.selectAntenna(ANT_AUTO));
+
     //=========================================================================
-// reset the system after 60 seconds if the application is unresponsive
-ApplicationWatchdog wd(120000, System.reset);
+// reset the system after 120 seconds if the application is unresponsive
+//ApplicationWatchdog wd(120000, System.reset);
 // EXAMPLE USAGE
 /*
 void loop() {
@@ -84,6 +89,9 @@ retained uint32_t ts2;
 retained uint32_t ts3;
 retained uint32_t ts4;
 retained uint32_t ts5;
+
+bool ota_firmware_updating = false;
+bool ota_firmware_complete = false;
 
     //=========================================================================
 
@@ -317,6 +325,8 @@ void setup()
   digitalWrite(D7, LOW); // LED set HIGH prior to OTA update
   //System.disableUpdates();
   System.on(firmware_update_pending, otaHandler);
+  System.on(firmware_update, otaCurrent);
+
 
   // Set up 'power' pins, comment out if not used! (Set up as I2C power pins on current Particle Photon board)
   pinMode(D2, OUTPUT);
@@ -607,7 +617,22 @@ void loop()
                 // Give DeviceOS time to check for and download firmware updates (at 10:00 --maybe should add a check for solar power and battery voltage)
                 delay(120000); 
             }*****  REMOVE ABOVE CODE IF OTA UPDATES ARE WORKING  **** */
-            System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            if (ota_firmware_updating == true) {
+                digitalWrite(D7, HIGH);
+                //delay(wakeSeconds);
+                waitUntil(checkOTAprogress);
+                if (!System.updatesPending()) {
+                    System.sleep(3000);
+                }
+                else {
+                    Particle.process();
+                    waitUntil(checkSystemUpdateprogress);
+                }
+            }
+            if (ota_firmware_complete == false) {
+                System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            }
+            //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
             retry_publish();
@@ -629,7 +654,20 @@ void loop()
           ONEWIRE_sensors_finished = false;
           
           Serial.println("sensors updated ...going to sleep");
-          System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+
+          if (ota_firmware_updating == true) {
+              
+              waitUntil(checkOTAprogress);
+              digitalWrite(D7, HIGH);
+              return;
+          }
+          if (ota_firmware_complete == false) {
+              if (!System.updatesPending()) {
+                  System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+              }
+              //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+          }
+          //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
   }
 }
 
@@ -708,7 +746,68 @@ void otaHandler() {
     //System.enableUpdates();
     digitalWrite(D7, HIGH);
     Particle.process();
-    delay(360000);  // Could eliminate this blocking code by using if statement to delay sleep.
-    digitalWrite(D7, LOW);
-    Particle.publish("OTA update error", PRIVATE);
+    // The following should never run.  May want to change in the future to remove possible blocking code.
+    if (waitFor(checkOTAprogress, 300000)) {
+        Particle.process();
+        delay(200);
+        digitalWrite(D7, LOW);
+        delay(100);
+        digitalWrite(D7, HIGH);
+        delay(200);
+        digitalWrite(D7, LOW);
+        delay(100);
+        digitalWrite(D7, HIGH);
+    } else {
+        digitalWrite(D7, LOW);
+        Particle.publish("OTA update error", PRIVATE);
+    }
+    //delay(300000);  // Could eliminate this blocking code by using if statement to delay sleep.
+    
+}
+
+void otaCurrent(system_event_t system_event, int mode) {
+    switch (mode) {
+        case firmware_update_begin:
+        case firmware_update_progress:
+        {
+            digitalWrite(D7, HIGH);
+            ota_firmware_updating = true;
+            break;
+        }
+        case firmware_update_complete:
+        {
+            digitalWrite(D7, LOW);
+            ota_firmware_updating = false;
+            ota_firmware_complete = true;
+            break;
+        }
+        case firmware_update_failed:
+        {
+            digitalWrite(D7, LOW);
+            ota_firmware_updating = false;
+            break;
+        }
+    }
+    // doDuringOTA();
+}
+
+bool checkOTAprogress(void) {
+    if (ota_firmware_updating == true) {
+        return 0;
+    }
+    if (ota_firmware_complete == true) {
+        return 1;
+    }
+}
+
+bool checkSystemUpdateprogress(void) {
+    if (System.updatesPending()) {
+        return 0;
+    }
+    else if (!System.updatesPending()) {
+        return 1;
+    } else {
+        Serial.println("System.updatesPending() error");
+        Particle.publish("System.updatesPending() error", PRIVATE);
+    }
 }
