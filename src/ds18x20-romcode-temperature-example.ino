@@ -9,12 +9,13 @@ PRODUCT_ID(8620);
 PRODUCT_VERSION(10);
 
 // System thread allows system tasks (such as OTA updates) to continue while application code is blocking.
-SYSTEM_THREAD(ENABLED);
+// BUT! I couldn't get this to work with OTA updates and System.sleep coming from application code.
+//SYSTEM_THREAD(ENABLED);
 
     //=========================================================================
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
-//SYSTEM_MODE(SEMI_AUTOMATIC);
+SYSTEM_MODE(SEMI_AUTOMATIC);
 
     //=========================================================================
 // This makes sure the Photon is using the best wireless signal.
@@ -90,8 +91,6 @@ retained uint32_t ts3;
 retained uint32_t ts4;
 retained uint32_t ts5;
 
-bool ota_firmware_updating = false;
-bool ota_firmware_complete = false;
 
     //=========================================================================
 
@@ -294,7 +293,9 @@ void set_wake_time(void)
 void retry_publish(void) 
 {
         set_wake_time();
-        System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+            System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        }
         
         Serial.print("attempting to resend sensor_data_toGCP");
         if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
@@ -303,7 +304,9 @@ void retry_publish(void)
         }
         Serial.print("...retry #1 failed");
 
-        System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+            System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        }
 
         Serial.print("...last attempt to resend sensor_data_toGCP");
         
@@ -315,6 +318,26 @@ void retry_publish(void)
 
         // Final failure code goes here ///
 }
+
+/**************************************************************************/
+/*
+    OTA firmware update Timeout and Flags to guard calls to System.sleep() from interrupting firmware updates.
+*/
+/**************************************************************************/
+bool ota_firmware_pending = false;
+bool ota_firmware_updating = false;
+bool ota_firmware_complete = false;
+bool OTA_update_incoming_DO_NOT_SLEEP = false; // This flag should be unnecessary because of !OTA_update_timer.isActive().
+
+void otaTimeout() {
+    OTA_update_incoming_DO_NOT_SLEEP = false;
+    Particle.publish("OTA Timeout expired ...continuing application");
+    Particle.process();
+}
+
+Timer OTA_update_timer(420000, otaTimeout, true);
+    //======================================================================
+
 
 void setup()
 {
@@ -344,7 +367,8 @@ void setup()
   {
     // There was a problem detecting the ADXL345 ... check your connections
     Serial.print("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!");
-    Particle.publish("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!"); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
+    Particle.connect();
+    Particle.publish("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!");
   }
 
   // Display some basic information on this sensor
@@ -359,6 +383,7 @@ void setup()
   if(!hdc.begin())
   {
       Serial.print("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
+      //~phton code~Particle.connect();
       //~photon code~Particle.publish("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
   }
   delay(15);    // let the chip initialize
@@ -368,6 +393,14 @@ void setup()
 void loop()
 {
   //delay(5000); // 5 second pause provides window to manually begin a OTA flash remotely.  Should use Particle Product instead.
+  // Particle Product automatic OTA firmware updates can be interrupted by application code.
+  // The following should completely block application code while allowing the system code to run, while OTA updates are available.
+  if (OTA_update_timer.isActive()) {
+    Particle.process();
+    return;
+  }
+
+
   int currentTens_place = (Time.minute() / 10);
 
   //unsigned long CurrentMillis = millis();
@@ -394,6 +427,7 @@ void loop()
       sensors_event_t event;
       tsl.getEvent(&event);
 
+      //Particle.connect();
       //Particle.publish("getting sensor event");
 
       // Display the results (light is measured in lux)
@@ -401,6 +435,7 @@ void loop()
       {
           Serial.print(event.light); Serial.print(" lux");
           lux = event.light;
+          //~photon code~Particle.connect();
           //~photon code~Particle.publish("lux", String(event.light), 60, PRIVATE);
           Serial.println("      ...publish successful.");
       }
@@ -409,6 +444,7 @@ void loop()
           /* If event.light = 0 lux the sensor is probably saturated
               and no reliable data could be generated! */
           Serial.println("Sensor overload");
+          //~photon code~Particle.connect();
           //~photon code~Particle.publish("Sensor overload");
           lux = 0;
       }
@@ -442,6 +478,7 @@ void loop()
       if (hdc.batteryLOW()) Serial.println("TRUE");
       else Serial.println("FALSE");
 
+      //~photon code~Particle.connect();
       //~photon code~Particle.publish("ambientTempF & ambientHumidity", String(ambientTempF) + String(ambientHumidity), 60, PRIVATE);
 
       switch (currentTens_place) {
@@ -483,6 +520,7 @@ void loop()
   if (sensor.read()) {
     // Do something cool with the temperature
     Serial.printf("Temperature %.2f C %.2f F ", sensor.celsius(), sensor.fahrenheit());
+    //Particle.connect();
     //Particle.publish("temperature", String(sensor.fahrenheit()), PRIVATE);
 
     uint8_t addr[8];
@@ -550,7 +588,7 @@ void loop()
       }
       //return;
       } else {
-        //Particle.connect();
+        Particle.connect();
         Particle.publish("New ROMCODE", ROMCODE, 60, PRIVATE, WITH_ACK);
       }
     
@@ -597,7 +635,7 @@ void loop()
               break;
       case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f}", ts4, L4, wT4, gT4, hT4, aT4, aH4, ts5, L5, wT5, gT5, hT5, aT5, aH5);
               break;
-      default: //Particle.connect();
+      default: Particle.connect();
                 Particle.publish("Batch timing error", NULL);
               break;
     }
@@ -608,15 +646,43 @@ void loop()
     // Figure out how to fit more data in a signle publish!  --oh, oh, I know! DeviceOS v0.8.0 supports up to 622 bytes of data!
     //sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
     
-    //Particle.connect();
+    Particle.connect();
+    if (waitFor(Particle.connected, 300000)) {
+        Particle.process();
+        if (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
+            OTA_update_incoming_DO_NOT_SLEEP = true;
+            Serial.printf("OTA_update_incoming_DO_NOT_SLEEP flag is set to %d . If 1, application code should now stop.");
+            OTA_update_timer.start(); // This SHOULD be the last thing the application code does before it stops for the OTA update.
+            Particle.process();
+            return;
+        }
+
+        if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
+            set_wake_time();
+            Serial.print("sensor_data_toGCP published successfully");
+            Serial.println("  ...Going to Sleep");
+
+            //if (!OTA_update_timer.isActive()) {  // arguably, the timer flag is completely unnecessary.
+            if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+                System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            }
+
+        } else {
+            Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
+            retry_publish();
+            set_wake_time();
+            if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+                System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            }
+        }
+
+    }
+    /************** Hot Mess!  Did not work to guard sleep from interrupting OTA updates. *****************
     if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
             set_wake_time();
             Serial.print("sensor_data_toGCP published successfully");
             Serial.println("  ...Going to Sleep");
-            /*if ((Time.hour() == 10) && (currentTens_place == 0)) {
-                // Give DeviceOS time to check for and download firmware updates (at 10:00 --maybe should add a check for solar power and battery voltage)
-                delay(120000); 
-            }*****  REMOVE ABOVE CODE IF OTA UPDATES ARE WORKING  **** */
+
             if (ota_firmware_updating == true) {
                 digitalWrite(D7, HIGH);
                 //delay(wakeSeconds);
@@ -650,6 +716,7 @@ void loop()
      // Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK);
 
     //LastPublish = millis();
+    */
   }
 
   if (I2C_sensors_finished == true && ONEWIRE_sensors_finished == true) {
@@ -660,6 +727,11 @@ void loop()
           ONEWIRE_sensors_finished = false;
           
           Serial.println("sensors updated ...going to sleep");
+
+          if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+              System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+          }
+          /*********** Also a HOT MESS! Did not work to guard sleep from interrupting OTA updates.************
 
           if (ota_firmware_updating == true) {
               
@@ -674,6 +746,7 @@ void loop()
               //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
           }
           //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+          */
   }
 }
 
@@ -747,10 +820,12 @@ void printDebugInfo() {
 }
 
 void otaHandler() {
+    ota_firmware_pending = true;
     // doBeforeOTA();
 
     //System.enableUpdates();
     digitalWrite(D7, HIGH);
+    /*
     Particle.process();
     // The following should never run.  May want to change in the future to remove possible blocking code.
     if (waitFor(checkOTAprogress, 300000)) {
@@ -767,6 +842,7 @@ void otaHandler() {
         digitalWrite(D7, LOW);
         Particle.publish("OTA update error", PRIVATE);
     }
+    */
     //delay(300000);  // Could eliminate this blocking code by using if statement to delay sleep.
     
 }
@@ -797,6 +873,7 @@ void otaCurrent(system_event_t system_event, int mode) {
     // doDuringOTA();
 }
 
+// These simple boolean functions are required for formatting conditional statements for waitUntil() and waitFor().
 bool checkOTAprogress(void) {
     if (ota_firmware_updating == true) {
         return 0;
@@ -807,19 +884,14 @@ bool checkOTAprogress(void) {
 }
 
 bool checkSystemUpdateprogress(void) {
-    if (System.updatesPending()) {
-        return 0;
-    }
-    else if (!System.updatesPending()) {
-        return 1;
-    } else {
-        Serial.println("System.updatesPending() error");
-        Particle.publish("System.updatesPending() error", PRIVATE);
-    }
+    return !System.updatesPending();
 }
+
+/************* This code has been incorporated into the program. Delete this after debugging. *************
 // Experiment to use with semi-automatic connection to capture OTA firmware update
 
-
+bool ota_firmware_updating = false;
+bool ota_firmware_complete = false;
 bool OTA_update_incoming_DO_NOT_SLEEP = false;
 
 void otaTimeout() {
@@ -838,14 +910,14 @@ if (OTA_update_timer.isActive()) {
     Particle.process();
     return;
 }
-/*
- REST OF CODE
-*/
+
+ //REST OF CODE
+
 // Sensors complete, ready to publish
 Particle.connect();
-waitFor(Particle.connected, 300000); {
+if (waitFor(Particle.connected, 300000)) {
     Particle.process();
-    if (ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
+    if (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
         OTA_update_incoming_DO_NOT_SLEEP = true;
         OTA_update_timer.start();
         Particle.process();
@@ -856,11 +928,12 @@ waitFor(Particle.connected, 300000); {
 if (conditions || conditions) {
     // PUBLISH
     //if (!OTA_update_timer.isActive()) {}
-    if (OTA_update_incoming_DO_NOT_SLEEP = false) {
+    if (OTA_update_incoming_DO_NOT_SLEEP == false) {
         //sleep
     } else {
         Particle.process();
         // loop back to start
     }
 }
+*/
 
