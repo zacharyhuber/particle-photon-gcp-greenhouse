@@ -236,6 +236,27 @@ void configureSensor(void)
   Serial.println("------------------------------------");
 }
 
+
+/**************************************************************************/
+/*
+    OTA firmware update Timeout and Flags to guard calls to System.sleep() from interrupting firmware updates.
+*/
+/**************************************************************************/
+bool ota_firmware_pending = false;
+bool ota_firmware_updating = false;
+bool ota_firmware_complete = false;
+bool OTA_update_incoming_DO_NOT_SLEEP = false; // This flag should be unnecessary because of !OTA_update_timer.isActive().
+
+void otaTimeout() {
+    OTA_update_incoming_DO_NOT_SLEEP = false;
+    Particle.publish("OTA Timeout expired ...continuing application", PRIVATE);
+    Particle.process();
+}
+
+Timer OTA_update_timer(420000, otaTimeout, true);
+
+
+
 /**************************************************************************/
 /*
     Set up System.sleep timing to wake up at the next 10 minute mark: x:00, x:10, x:20, x:30, x:40, x:50.
@@ -294,6 +315,7 @@ void retry_publish(void)
 {
         set_wake_time();
         if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+            Serial.flush();
             System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
         }
         
@@ -305,6 +327,7 @@ void retry_publish(void)
         Serial.print("...retry #1 failed");
 
         if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+            Serial.flush();
             System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
         }
 
@@ -318,25 +341,6 @@ void retry_publish(void)
 
         // Final failure code goes here ///
 }
-
-/**************************************************************************/
-/*
-    OTA firmware update Timeout and Flags to guard calls to System.sleep() from interrupting firmware updates.
-*/
-/**************************************************************************/
-bool ota_firmware_pending = false;
-bool ota_firmware_updating = false;
-bool ota_firmware_complete = false;
-bool OTA_update_incoming_DO_NOT_SLEEP = false; // This flag should be unnecessary because of !OTA_update_timer.isActive().
-
-void otaTimeout() {
-    OTA_update_incoming_DO_NOT_SLEEP = false;
-    Particle.publish("OTA Timeout expired ...continuing application");
-    Particle.process();
-}
-
-Timer OTA_update_timer(420000, otaTimeout, true);
-    //======================================================================
 
 
 void setup()
@@ -368,7 +372,7 @@ void setup()
     // There was a problem detecting the ADXL345 ... check your connections
     Serial.print("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!");
     Particle.connect();
-    Particle.publish("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!");
+    Particle.publish("Ooops, no TSL2561 detected ... Check your wiring or I2C ADDR!", PRIVATE);
   }
 
   // Display some basic information on this sensor
@@ -636,7 +640,7 @@ void loop()
       case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f}", ts4, L4, wT4, gT4, hT4, aT4, aH4, ts5, L5, wT5, gT5, hT5, aT5, aH5);
               break;
       default: Particle.connect();
-                Particle.publish("Batch timing error", NULL);
+                Particle.publish("Batch timing error", NULL, PRIVATE);
               break;
     }
 
@@ -652,6 +656,7 @@ void loop()
         if (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
             OTA_update_incoming_DO_NOT_SLEEP = true;
             Serial.printf("OTA_update_incoming_DO_NOT_SLEEP flag is set to %d . If 1, application code should now stop.");
+            Serial.flush();
             OTA_update_timer.start(); // This SHOULD be the last thing the application code does before it stops for the OTA update.
             Particle.process();
             return;
@@ -664,6 +669,8 @@ void loop()
 
             //if (!OTA_update_timer.isActive()) {  // arguably, the timer flag is completely unnecessary.
             if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+                Particle.process();
+                Serial.flush();
                 System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
             }
 
@@ -672,6 +679,8 @@ void loop()
             retry_publish();
             set_wake_time();
             if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+                Particle.process();
+                Serial.flush();
                 System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
             }
         }
@@ -729,6 +738,7 @@ void loop()
           Serial.println("sensors updated ...going to sleep");
 
           if (OTA_update_incoming_DO_NOT_SLEEP == false) {
+              Serial.flush();
               System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
           }
           /*********** Also a HOT MESS! Did not work to guard sleep from interrupting OTA updates.************
@@ -877,9 +887,13 @@ void otaCurrent(system_event_t system_event, int mode) {
 bool checkOTAprogress(void) {
     if (ota_firmware_updating == true) {
         return 0;
-    }
-    if (ota_firmware_complete == true) {
+    } else if (ota_firmware_complete == true) {
         return 1;
+    } else if (ota_firmware_pending == false && ota_firmware_updating == false && ota_firmware_complete == false) {
+        return 1;
+    } else {
+        Serial.println("error in checkOTAprogress");
+        return -1;
     }
 }
 
