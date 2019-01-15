@@ -367,6 +367,15 @@ void loop()
   //delay(5000); // 5 second pause provides window to manually begin a OTA flash remotely.  Should use Particle Product instead.
   int currentTens_place = (Time.minute() / 10);
 
+  if (currentTens_place == 5) {
+  //if (Time.hour() == 9 && currentTens_place == 5) {
+      Particle.connect();
+      waitUntil(Particle.connected);
+      Particle.process();
+      delay(420000);
+      Particle.publish("No OTA update", PRIVATE);
+  }
+
   //unsigned long CurrentMillis = millis();
   //if ((CurrentMillis - LastReading) > SensorFrequency)
   if (I2C_sensors_finished == false)
