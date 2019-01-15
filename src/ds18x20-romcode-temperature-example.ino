@@ -620,13 +620,19 @@ void loop()
             if (ota_firmware_updating == true) {
                 digitalWrite(D7, HIGH);
                 //delay(wakeSeconds);
+                Serial.print("checking for firmware_update_pending... ");
                 waitUntil(checkOTAprogress);
+                Serial.println("firmware_update_complete");
                 if (!System.updatesPending()) {
+                    Serial.println("!System.updatesPending()");
                     System.sleep(3000);
                 }
                 else {
+                    Serial.print("System.updatesPending");
                     Particle.process();
+                    Serial.print("  waiting for update to finish... ");
                     waitUntil(checkSystemUpdateprogress);
+                    Serial.println("System.updatesPending finished.  Update should be complete");
                 }
             }
             if (ota_firmware_complete == false) {
