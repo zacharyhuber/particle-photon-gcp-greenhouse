@@ -2,11 +2,11 @@
  * Project photon-gcp-greenhouse
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
- * Date: Jan 12, 2019
+ * Date: Jan 15, 2019
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(8620);
-PRODUCT_VERSION(002);
+PRODUCT_VERSION(21);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -17,7 +17,7 @@ PRODUCT_VERSION(002);
 //~photon code~STARTUP(WiFi.selectAntenna(ANT_AUTO));
     //=========================================================================
 // reset the system after 60 seconds if the application is unresponsive
-ApplicationWatchdog wd(120000, System.reset);
+//ApplicationWatchdog wd(120000, System.reset);
 // EXAMPLE USAGE
 /*
 void loop() {
@@ -637,10 +637,18 @@ void loop()
             set_wake_time();
             Serial.print("sensor_data_toGCP published successfully");
             Serial.println("  ...Going to Sleep");
+            /*
             if ((Time.hour() == 10) && (currentTens_place == 0)) {
                 // Give DeviceOS time to check for and download firmware updates (at 10:00 --maybe should add a check for solar power and battery voltage)
                 delay(60000); 
             }
+            */
+           if (batteryVoltage3v < 3.59) {
+               Particle.publish("Low Battery... sleeping for 1 hour", batteryVoltage3v, 60, PRIVATE);
+               Particle.process();
+               delay(3000);
+               System.sleep(SLEEP_MODE_DEEP, 3600000);
+           }
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
