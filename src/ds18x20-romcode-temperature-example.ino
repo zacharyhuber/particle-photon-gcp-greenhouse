@@ -583,9 +583,7 @@ void loop()
   }
   Serial.println();
 
-  // Conditional statement for Publishing to Google Cloud Platform: NEED TO UPDATE WITH A FLAG FOR ONEWIRE ADDRESSES BECAUSE THEY USE void loop() to capture more than one sensor reading
-  if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
-
+  if (I2C_sensors_finished == true && ONEWIRE_sensors_finished == true) {
       FuelGauge fuel;
       float batteryVoltage3v = fuel.getVCell();
       
@@ -603,6 +601,30 @@ void loop()
           case 5: bV3_5 = batteryVoltage3v;
                 break;
       }
+  }
+
+  // Conditional statement for Publishing to Google Cloud Platform: NEED TO UPDATE WITH A FLAG FOR ONEWIRE ADDRESSES BECAUSE THEY USE void loop() to capture more than one sensor reading
+  if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
+
+      /************* Moved to a separate if() statement *******************
+      FuelGauge fuel;
+      float batteryVoltage3v = fuel.getVCell();
+      
+      switch (currentTens_place) {
+          case 0: bV3_0 = batteryVoltage3v;
+                break;
+          case 1: bV3_1 = batteryVoltage3v;
+                break;
+          case 2: bV3_2 = batteryVoltage3v;
+                break;
+          case 3: bV3_3 = batteryVoltage3v;
+                break;
+          case 4: bV3_4 = batteryVoltage3v;
+                break;
+          case 5: bV3_5 = batteryVoltage3v;
+                break;
+      }
+      */
 
   //if ((CurrentMillis - LastPublish) > PublishFrequency) {
     //*********************************
@@ -643,8 +665,8 @@ void loop()
                 delay(60000); 
             }
             */
-           if (batteryVoltage3v < 3.59) {
-               Particle.publish("Low Battery... sleeping for 1 hour", batteryVoltage3v, 60, PRIVATE);
+           if (batteryVoltage3v < 3.6) {
+               Particle.publish("Low Battery... sleeping for 1 hour", String(batteryVoltage3v), PRIVATE);
                Particle.process();
                delay(3000);
                System.sleep(SLEEP_MODE_DEEP, 3600000);
