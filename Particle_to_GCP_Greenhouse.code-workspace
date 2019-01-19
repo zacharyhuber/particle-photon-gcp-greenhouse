@@ -5,7 +5,7 @@
         "files.associations": {
             "*.ino": "cpp"
         },
-        "particle.targetPlatform": "electron"
+        "particle.targetPlatform": "argon"
     },
     "folders": [
         {

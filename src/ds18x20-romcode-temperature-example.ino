@@ -610,9 +610,10 @@ void loop()
 
   /*
   if (I2C_sensors_finished == true && ONEWIRE_sensors_finished == true) {
-      FuelGauge fuel;
-      float batteryVoltage3v = fuel.getVCell();
-      
+      //FuelGauge fuel; //Electron code
+      //float batteryVoltage3v = fuel.getVCell(); //Electron code
+      float batteryVoltage3v = analogRead(BATT) * 0.0011224;
+
       switch (currentTens_place) {
           case 0: bV3_0 = batteryVoltage3v;
                 break;
@@ -633,8 +634,9 @@ void loop()
   // Conditional statement for Publishing to Google Cloud Platform: NEED TO UPDATE WITH A FLAG FOR ONEWIRE ADDRESSES BECAUSE THEY USE void loop() to capture more than one sensor reading
   if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
 
-      FuelGauge fuel;
-      float batteryVoltage3v = fuel.getVCell();
+      //FuelGauge fuel; //Electron code
+      //float batteryVoltage3v = fuel.getVCell(); //Electron code
+      float batteryVoltage3v = analogRead(BATT) * 0.0011224; //Argon code
       
       switch (currentTens_place) {
           case 0: bV3_0 = batteryVoltage3v;
@@ -730,8 +732,9 @@ void loop()
 
   if (I2C_sensors_finished == true && ONEWIRE_sensors_finished == true) {
 
-          FuelGauge fuel;
-          float batteryVoltage3v = fuel.getVCell();
+          //FuelGauge fuel; //Electron code
+          //float batteryVoltage3v = fuel.getVCell(); //Electron code
+          float batteryVoltage3v = analogRead(BATT) * 0.0011224; //Argon code
       
           switch (currentTens_place) {
                case 0: bV3_0 = batteryVoltage3v;
