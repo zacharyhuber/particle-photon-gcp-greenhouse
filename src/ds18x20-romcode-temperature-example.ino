@@ -28,14 +28,16 @@ void loop() {
 // AWDT count reset automatically after loop() ends
 */
     //=========================================================================
+    /********* FEATURE NOT PRESENT IN 0.8.0_rc27 for Argon!!! *****************
+
 // This enables retained variables in the Backup RAM (SRAM) 
 STARTUP(System.enableFeature(FEATURE_RETAINED_MEMORY));
 
-/*
-When adding new retained variables to an existing set of retained variables,
-it's a good idea to add them after the existing variables.
-This ensures the existing retained data is still valid even with the new code.
-*/
+
+//       When adding new retained variables to an existing set of retained variables,
+//       it's a good idea to add them after the existing variables.
+//       This ensures the existing retained data is still valid even with the new code.
+
 retained double L0;
 retained double L1;
 retained double L2;
@@ -98,6 +100,70 @@ retained uint16_t bV12_2;
 retained uint16_t bV12_3;
 retained uint16_t bV12_4;
 retained uint16_t bV12_5;
+*/
+
+double L0;
+double L1;
+double L2;
+double L3;
+double L4;
+double L5;
+
+double wT0;
+double wT1;
+double wT2;
+double wT3;
+double wT4;
+double wT5;
+
+double gT0;
+double gT1;
+double gT2;
+double gT3;
+double gT4;
+double gT5;
+
+double hT0;
+double hT1;
+double hT2;
+double hT3;
+double hT4;
+double hT5;
+
+double aT0;
+double aT1;
+double aT2;
+double aT3;
+double aT4;
+double aT5;
+
+double aH0;
+double aH1;
+double aH2;
+double aH3;
+double aH4;
+double aH5;
+
+uint32_t ts0;
+uint32_t ts1;
+uint32_t ts2;
+uint32_t ts3;
+uint32_t ts4;
+uint32_t ts5;
+
+float bV3_0;
+float bV3_1;
+float bV3_2;
+float bV3_3;
+float bV3_4;
+float bV3_5;
+
+uint16_t bV12_0;
+uint16_t bV12_1;
+uint16_t bV12_2;
+uint16_t bV12_3;
+uint16_t bV12_4;
+uint16_t bV12_5;
 
     //=========================================================================
 
