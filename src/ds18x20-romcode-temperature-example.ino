@@ -781,15 +781,18 @@ void loop()
                Particle.process();
                delay(3000);
                System.sleep(SLEEP_MODE_DEEP, 3600000);
+               delay(3600000); // System.sleep is skipped in 0.8.0_rc27 Argon
                System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
            }
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            delay(wakeSeconds * 1000); // System.sleep is skipped in 0.8.0_rc27 Argon
             System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
             retry_publish();
             set_wake_time();
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            delay(wakeSeconds * 1000); // System.sleep is skipped in 0.8.0_rc27 Argon
             System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
     }
     
