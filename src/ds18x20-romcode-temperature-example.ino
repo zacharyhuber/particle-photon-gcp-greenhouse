@@ -781,13 +781,16 @@ void loop()
                Particle.process();
                delay(3000);
                System.sleep(SLEEP_MODE_DEEP, 3600000);
+               System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
            }
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
             retry_publish();
             set_wake_time();
             System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
     }
     
      // Particle.connect();
@@ -837,13 +840,17 @@ void loop()
 
 
           // all retained variables should have been updated so go to SLEEP_MODE_DEEP until next measurement
+          // BUT NOT ON THE ARGON 0.8.0_rc27!!!!!!!!!!!!!!!!!!
           set_wake_time();
 
           I2C_sensors_finished = false;
           ONEWIRE_sensors_finished = false;
           
           Serial.println("sensors updated ...going to sleep");
-          System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+          // 0.8.0_rc27 version of Argon does not have sleep or backup registers implemented.
+          // Replacing sleep with delay until both are implemented.
+          //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+          delay(wakeSeconds * 1000);
   }
 }
 
