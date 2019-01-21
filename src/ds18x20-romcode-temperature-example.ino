@@ -951,3 +951,75 @@ if (conditions || conditions) {
 }
 */
 
+/********* HERE IS A MAGICAL FIX FOR OTA CONNECTIVITY ISSUES! ************
+//Using wakeOn RI_UC, the cellular modem can wake the Electron from sleep for an OTA update!
+// Need to incorporate useful code and discard the rest.
+#include "Particle.h"
+
+#if SYSTEM_VERSION < 0x00080000
+#error "You must target system firmware 0.8.0 or later to use this code"
+#endif
+
+SerialLogHandler logHandler(LOG_LEVEL_TRACE);
+
+const int SLEEP_PIN = D2;
+const int WAKE_PIN = D3;
+const unsigned long SLEEP_TIME_SECS = 120;
+
+int testVar = 0;
+
+int testFn(String param);
+void wakeEvent(const char *event, const char *data);
+
+void setup() {
+	Serial.begin();
+
+	pinMode(SLEEP_PIN, INPUT_PULLUP);
+	pinMode(WAKE_PIN, INPUT_PULLDOWN);
+
+	Particle.variable("testVar", testVar);
+	Particle.function("testFn", testFn);
+	Particle.subscribe("wakeEvent", wakeEvent, MY_DEVICES);
+}
+
+void loop() {
+	if (digitalRead(SLEEP_PIN) == LOW) {
+		Log.info("turning on AT+URING=1");
+
+		// Enable wake on all URCs
+		Cellular.command("AT+URING=1\r\n");
+
+		delay(1000);
+
+		SleepResult sleepResult = System.sleep({RI_UC, WAKE_PIN}, RISING, SLEEP_TIME_SECS, SLEEP_NETWORK_STANDBY);
+
+		// This delay is to allow the serial monitor to reconnect only
+		delay(2000);
+
+		if (sleepResult.wokenUpByRtc()) {
+			Log.info("woke up by time expired");
+		}
+		else
+		if (sleepResult.pin() == RI_UC) {
+			Log.info("woke up by cellular");
+		}
+		else {
+			Log.info("woke up by WAKE_PIN");
+		}
+
+		// Turn URING back to the default value (only notify on SMS or voice call)
+		Cellular.command("AT+URING=0\r\n");
+
+		testVar++;
+	}
+}
+
+int testFn(String param) {
+	Log.info("testFn %s", param.c_str());
+	return 0;
+}
+
+void wakeEvent(const char *event, const char *data) {
+	Log.info("wakeEvent %s %s", event, data);
+}
+*/
