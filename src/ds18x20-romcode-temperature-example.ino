@@ -315,7 +315,7 @@ void configureSensor(void)
 */
 /**************************************************************************/
 #define vDividerONpin D13
-#define vDividerOFFpin D12
+#define vDividerOFFpin D8
 #define vDividerREADpin A5
 
 int read12vBatteryVoltage(void)
@@ -324,12 +324,12 @@ int read12vBatteryVoltage(void)
     pinMode(vDividerOFFpin, OUTPUT);
     pinMode(vDividerREADpin, INPUT);
     digitalWrite(vDividerONpin, HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(vDividerONpin, LOW);
     delay(500);
     int batteryReading12v = analogRead(vDividerREADpin);
     digitalWrite(vDividerOFFpin, HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(vDividerOFFpin, LOW);
     return batteryReading12v;
 }
@@ -417,10 +417,10 @@ void setup()
 {
   Serial.begin(9600);
   // Set up 'power' pins, comment out if not used! (Set up as I2C power pins on current Particle Photon board)
-  pinMode(D2, OUTPUT);
-  pinMode(D3, OUTPUT);
-  digitalWrite(D2, LOW);
-  digitalWrite(D3, HIGH);
+  //pinMode(D2, OUTPUT);
+  //pinMode(D3, OUTPUT);
+  //digitalWrite(D2, LOW);
+  //digitalWrite(D3, HIGH);
 
 
 
