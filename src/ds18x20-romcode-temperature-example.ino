@@ -350,6 +350,8 @@ int read12vBatteryVoltage(void)
 #define Time_for_SolarHeater_OFF 15 //3:00 PM
 
 bool testingSolarCharger = false;
+bool testingLowBattery = false;
+bool testingLowLight = false;
 bool solarHeaterON = false;
 
 void test_of_Solar_Charger() {
@@ -357,9 +359,32 @@ void test_of_Solar_Charger() {
         testingSolarCharger = false;
         solarHeaterON = true;
         Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
+        Serial.println("Solar Heater ON");
     }
 }
-Timer testingSolarTimer(5000, test_of_Solar_Charger);
+Timer testingSolarTimer(10000, test_of_Solar_Charger); // Should maybe have two or three timers with success flags for each.
+
+
+void test_of_Low_Battery_Voltage() {
+    if (read12vBatteryVoltage() < 3200) {
+        testingLowBattery = false;
+        solarHeaterON = false;
+        Particle.publish("Solar Heater OFF due to low battery", PRIVATE, NO_ACK);
+        Serial.println("Solar Heater OFF due to low battery");
+    }
+}
+Timer testingLowBatteryTimer(10000, test_of_Low_Battery_Voltage);
+
+
+void test_of_Low_Light_Level() {
+    if (lux < 800) {
+        testingLowLight = false;
+        solarHeaterON = false;
+        Particle.publish("Solar Heater OFF due to low light levels", PRIVATE, NO_ACK);
+        Serial.println("Solar Heater OFF due to low light levels");
+    }
+}
+Timer testingLowLightTimer(300000, test_of_Low_Light_Level);
 
 
 void turnONsolarHeater(void) 
@@ -369,6 +394,7 @@ void turnONsolarHeater(void)
             testingSolarCharger = true;
             testingSolarTimer.start();
             Particle.publish("Solar Heater waiting...", PRIVATE, NO_ACK);
+            Serial.println("Solar Heater waiting...");
             
             // Other stuff to do when preparing to start the solar heater
 
@@ -386,6 +412,23 @@ void turnONsolarHeater(void)
 
 void turnOFFsolarHeater(void)
 {
+    if (solarHeaterON == true && Time.hour() > Time_for_SolarHeater_OFF) {
+        solarHeaterON = false;
+        Particle.publish("Solar Heater OFF to charge battery for the night", PRIVATE, NO_ACK);
+        Serial.println("Solar Heater OFF to charge battery for the night");
+    }
+    if (!testingLowLightTimer.isActive()) {
+        if (solarHeaterON == true && lux < 800) {
+            testingLowLight = true;
+            testingLowLightTimer.start();
+        }
+    }
+    if (!testingLowBatteryTimer.isActive()) {
+        if (solarHeaterON == true && read12vBatteryVoltage() < 3300) {
+            testingLowBattery = true;
+            testingLowBatteryTimer.start();
+        }
+    }
 
 }
 
