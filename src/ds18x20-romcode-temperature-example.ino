@@ -209,8 +209,8 @@ Adafruit_HDC1000 hdc = Adafruit_HDC1000();
 
    Connections
    ===========
-   Connect SCL to analog 5 //different pins on Particle Photon
-   Connect SDA to analog 4 //different pins on Particle Photon
+   Connect SCL to D1 //different pins on Particle Photon
+   Connect SDA to D0 //different pins on Particle Photon
    Connect VDD to 3.3V DC
    Connect GROUND to common ground
 
@@ -333,6 +333,62 @@ int read12vBatteryVoltage(void)
     digitalWrite(vDividerOFFpin, LOW);
     return batteryReading12v;
 }
+
+
+/**************************************************************************/
+/*
+    Monitor 12v battery for high voltage and turn on solar dump load to use excess photovoltaic power
+        and turn off solar dump load when battery voltage drops.
+*/
+/**************************************************************************/
+#define relay0pin D2
+#define relay1pin D3
+#define relay2pin D4
+#define relay3pin D5
+
+#define Time_for_SolarHeater_ON 10 //10:00 AM 
+#define Time_for_SolarHeater_OFF 15 //3:00 PM
+
+bool testingSolarCharger = false;
+bool solarHeaterON = false;
+
+void test_of_Solar_Charger() {
+    if (read12vBatteryVoltage() > 3475) { // This could have better tests, including a "float" LED signal from the solar charge controller.
+        testingSolarCharger = false;
+        solarHeaterON = true;
+        Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
+    }
+}
+Timer testingSolarTimer(5000, test_of_Solar_Charger);
+
+
+void turnONsolarHeater(void) 
+{
+    if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 1000) {
+        if (testingSolarCharger == false && read12vBatteryVoltage() > 3475) {
+            testingSolarCharger = true;
+            testingSolarTimer.start();
+            Particle.publish("Solar Heater waiting...", PRIVATE, NO_ACK);
+            
+            // Other stuff to do when preparing to start the solar heater
+
+        }
+        if (testingSolarTimer.isActive()) {
+            // Anything that needs to be done while testing Solar Charger voltage.
+            return;
+        }
+
+    } else {
+        // do anything that should be done while solarHeater is ON. (like provide a reason for no activation)
+    }
+
+}
+
+void turnOFFsolarHeater(void)
+{
+
+}
+
 
 /**************************************************************************/
 /*
