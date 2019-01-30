@@ -963,7 +963,20 @@ void loop()
                     break;
           }
 
-          while (solarHeaterON == true || testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
+          if (testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
+              // THIS MIGHT BE BETTER AS A SERIES OF FOR LOOPS TO LIMIT THE CHANCE FOR BLOCKING
+              while (testingSolarTimer.isActive()) {
+                  Particle.process();
+              }
+              while (testingLowLightTimer.isActive()) {
+                  Particle.process();
+              }
+              while (testingLowBatteryTimer.isActive()) {
+                  Particle.process();
+              }
+          }
+
+          while (solarHeaterON == true) {
               currentMillis = millis();
               if (currentMillis - start_of_supercap_chargeMillis > Supercap_Charging_Period) {
                   digitalWrite(relay2pin, LOW);
@@ -996,8 +1009,8 @@ void loop()
                   start_of_supercap_chargeMillis = millis();
               }
               Particle.process();
-              digitalWrite(relay3pin, HIGH);
-              digitalWrite(relay2pin), HIGH);
+              //digitalWrite(relay3pin, HIGH);
+              //digitalWrite(relay2pin), HIGH);
 
 
               
