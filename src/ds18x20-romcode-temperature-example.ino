@@ -320,9 +320,9 @@ void configureSensor(void)
 
 int read12vBatteryVoltage(void)
 {
-    pinMode(vDividerONpin, OUTPUT);
-    pinMode(vDividerOFFpin, OUTPUT);
-    pinMode(vDividerREADpin, INPUT);
+    //pinMode(vDividerONpin, OUTPUT); // moved to setup()
+    //pinMode(vDividerOFFpin, OUTPUT);
+    //pinMode(vDividerREADpin, INPUT);
     digitalWrite(vDividerONpin, HIGH);
     delay(200);
     digitalWrite(vDividerONpin, LOW);
@@ -348,6 +348,9 @@ int read12vBatteryVoltage(void)
 
 #define Time_for_SolarHeater_ON 10 //10:00 AM 
 #define Time_for_SolarHeater_OFF 15 //3:00 PM
+#define MAX_SolarHeater_ON_Time 60000 // in millis
+#define Supercap_Charging_Period 14000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
+#define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 
 bool testingSolarCharger = false;
 bool testingLowBattery = false;
@@ -358,6 +361,9 @@ void test_of_Solar_Charger() {
     if (read12vBatteryVoltage() > 3475) { // This could have better tests, including a "float" LED signal from the solar charge controller.
         testingSolarCharger = false;
         solarHeaterON = true;
+        digitalWrite(vDividerONpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerONpin, LOW);
         Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
         Serial.println("Solar Heater ON");
     }
@@ -369,6 +375,9 @@ void test_of_Low_Battery_Voltage() {
     if (read12vBatteryVoltage() < 3200) {
         testingLowBattery = false;
         solarHeaterON = false;
+        digitalWrite(vDividerOFFpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerOFFpin, LOW);
         Particle.publish("Solar Heater OFF due to low battery", PRIVATE, NO_ACK);
         Serial.println("Solar Heater OFF due to low battery");
     }
@@ -380,6 +389,9 @@ void test_of_Low_Light_Level() {
     if (lux < 800) {
         testingLowLight = false;
         solarHeaterON = false;
+        digitalWrite(vDividerOFFpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerOFFpin, LOW);
         Particle.publish("Solar Heater OFF due to low light levels", PRIVATE, NO_ACK);
         Serial.println("Solar Heater OFF due to low light levels");
     }
@@ -414,6 +426,9 @@ void turnOFFsolarHeater(void)
 {
     if (solarHeaterON == true && Time.hour() > Time_for_SolarHeater_OFF) {
         solarHeaterON = false;
+        digitalWrite(vDividerOFFpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerOFFpin, LOW);
         Particle.publish("Solar Heater OFF to charge battery for the night", PRIVATE, NO_ACK);
         Serial.println("Solar Heater OFF to charge battery for the night");
     }
@@ -521,6 +536,14 @@ void setup()
   //digitalWrite(D2, LOW);
   //digitalWrite(D3, HIGH);
 
+  pinMode(relay0pin, OUTPUT);
+  pinMode(relay1pin, OUTPUT);
+  pinMode(relay2pin, OUTPUT);
+  pinMode(relay3pin, OUTPUT);
+
+  pinMode(vDividerONpin, OUTPUT);
+  pinMode(vDividerOFFpin, OUTPUT);
+  pinMode(vDividerREADpin, INPUT);
 
 
   Serial.println("Light Sensor Test"); Serial.println("");
@@ -940,6 +963,45 @@ void loop()
                     break;
           }
 
+          while (solarHeaterON == true || testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
+              currentMillis = millis();
+              if (currentMillis - start_of_supercap_chargeMillis > Supercap_Charging_Period) {
+                  digitalWrite(relay2pin, LOW);
+                  digitalWrite(relay3pin, LOW);
+                  delay(100);
+                  digitalWrite(relay1pin, HIGH);
+                  // turn on high power heater, connected to D7
+                  int priorReading12vBattery = analogRead(vDividerREADpin);
+                  start_of_solarHeaterMillis = millis();
+              }
+              if (currentMillis - start_of_solarHeaterMillis > MAX_SolarHeater_ON_Time) {
+                  digitalWrite(relay1pin, LOW);
+                  delay(100);
+                  int lowestReading12vBattery = analogRead(vDividerREADpin);
+                  start_of_RecoveryPeriodMillis = millis();
+                  //break;
+                  //return;
+              }
+              if (currentMillis - start_of_RecoveryPeriodMillis > Battery12v_Recovery_Period) {
+                  int highestReading12vBattery = analogRead(vDividerREADpin);
+                  digitalWrite(relay3pin, HIGH);
+                  digitalWrite(relay2pin, HIGH);
+                  start_of_supercap_chargeMillis = millis();
+              }
+              if (lowestReading12vBattery < 3375 || analogRead(vDividerREADpin) < 3375) {
+                  digitalWrite(relay1pin, LOW);
+                  delay(100);
+                  digitalWrite(relay3pin, HIGH);
+                  digitalWrite(relay2pin, HIGH);
+                  start_of_supercap_chargeMillis = millis();
+              }
+              Particle.process();
+              digitalWrite(relay3pin, HIGH);
+              digitalWrite(relay2pin), HIGH);
+
+
+              
+          }
 
           // all retained variables should have been updated so go to SLEEP_MODE_DEEP until next measurement
           // BUT NOT ON THE ARGON 0.8.0_rc27!!!!!!!!!!!!!!!!!!
@@ -954,6 +1016,7 @@ void loop()
           //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
           delay(wakeSeconds * 1000);
   }
+
 }
 
 void printDebugInfo() {
