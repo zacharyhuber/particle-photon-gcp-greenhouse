@@ -193,6 +193,14 @@ D3 - I2C power, ditto ground comment.
 Adafruit_HDC1000 hdc = Adafruit_HDC1000();
     //=========================================================================
 
+    //=========================================================================
+
+#include "adafruit-ina219.h"
+
+Adafruit_INA219 ina219;
+
+    //=========================================================================
+
 #include "Adafruit_TSL2561_U.h"
 
 /* This driver uses the Adafruit unified sensor library (Adafruit_Sensor),
@@ -562,6 +570,16 @@ void setup()
 
   // Setup the sensor gain and integration time
   configureSensor();
+
+
+  // Initialize the INA219.
+  // By default the initialization will use the largest range (32V, 2A).  However
+  // you can call a setCalibration function to change this range (see comments in example .ino).
+  if(!ina219.begin())
+  {
+      Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
+      Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
+  }
 
 
   Serial.println("HDC100x test");
@@ -992,14 +1010,27 @@ void loop()
                   delay(100);
                   int lowestReading12vBattery = analogRead(vDividerREADpin);
                   start_of_RecoveryPeriodMillis = millis();
-                  //break;
+                  if (lowestReading12vBattery < 3250) {
+                      break;
+                  }
                   //return;
               }
               if (currentMillis - start_of_RecoveryPeriodMillis > Battery12v_Recovery_Period) {
                   int highestReading12vBattery = analogRead(vDividerREADpin);
-                  digitalWrite(relay3pin, HIGH);
-                  digitalWrite(relay2pin, HIGH);
-                  start_of_supercap_chargeMillis = millis();
+                  if (highestReading12vBattery < 3475) {
+                      Particle.process();
+                      delay(5000);
+                  }
+                  if (highestReading12vBattery > 3475) {
+                      digitalWrite(relay3pin, HIGH);
+                      digitalWrite(relay2pin, HIGH);
+                      start_of_supercap_chargeMillis = millis();
+                  } else {
+                      break;
+                  }
+                  //digitalWrite(relay3pin, HIGH);
+                  //digitalWrite(relay2pin, HIGH);
+                  //start_of_supercap_chargeMillis = millis();
               }
               if (lowestReading12vBattery < 3375 || analogRead(vDividerREADpin) < 3375) {
                   digitalWrite(relay1pin, LOW);
@@ -1007,6 +1038,22 @@ void loop()
                   digitalWrite(relay3pin, HIGH);
                   digitalWrite(relay2pin, HIGH);
                   start_of_supercap_chargeMillis = millis();
+              }
+              if (ina219.getCurrent_mA() > 2500 || ina219.getCurrent_mA() < -2500) {
+                  continue;
+              }
+              if (currentMillis - start_of_supercap_chargeMillis < Supercap_Charging_Period && ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+                  //float busvoltage = 0;
+                  //float current_mA = 0;
+                  //busvoltage = ina219.getBusVoltage_V();
+                  //current_mA = ina219.getCurrent_mA();
+                  digitalWrite(relay2pin, LOW);
+                  digitalWrite(relay3pin, LOW);
+                  delay(100);
+                  digitalWrite(relay1pin, HIGH);
+                  // turn on high power heater, connected to D7
+                  int priorReading12vBattery = analogRead(vDividerREADpin);
+                  start_of_solarHeaterMillis = millis();
               }
               Particle.process();
               //digitalWrite(relay3pin, HIGH);
