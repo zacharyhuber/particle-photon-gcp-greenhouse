@@ -317,144 +317,6 @@ void configureSensor(void)
   Serial.println("------------------------------------");
 }
 
-/**************************************************************************/
-/*
-    Turn on (then off) voltage divider to read 12v Battery Voltage
-*/
-/**************************************************************************/
-#define vDividerONpin D13
-#define vDividerOFFpin D8
-#define vDividerREADpin A5
-
-int read12vBatteryVoltage(void)
-{
-    //pinMode(vDividerONpin, OUTPUT); // moved to setup()
-    //pinMode(vDividerOFFpin, OUTPUT);
-    //pinMode(vDividerREADpin, INPUT);
-    digitalWrite(vDividerONpin, HIGH);
-    delay(200);
-    digitalWrite(vDividerONpin, LOW);
-    delay(500);
-    int batteryReading12v = analogRead(vDividerREADpin);
-    digitalWrite(vDividerOFFpin, HIGH);
-    delay(200);
-    digitalWrite(vDividerOFFpin, LOW);
-    return batteryReading12v;
-}
-
-
-/**************************************************************************/
-/*
-    Monitor 12v battery for high voltage and turn on solar dump load to use excess photovoltaic power
-        and turn off solar dump load when battery voltage drops.
-*/
-/**************************************************************************/
-#define relay0pin D2
-#define relay1pin D3
-#define relay2pin D4
-#define relay3pin D5
-
-#define Time_for_SolarHeater_ON 10 //10:00 AM 
-#define Time_for_SolarHeater_OFF 15 //3:00 PM
-#define MAX_SolarHeater_ON_Time 60000 // in millis
-#define Supercap_Charging_Period 14000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
-#define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
-
-bool testingSolarCharger = false;
-bool testingLowBattery = false;
-bool testingLowLight = false;
-bool solarHeaterON = false;
-
-void test_of_Solar_Charger() {
-    if (read12vBatteryVoltage() > 3475) { // This could have better tests, including a "float" LED signal from the solar charge controller.
-        testingSolarCharger = false;
-        solarHeaterON = true;
-        digitalWrite(vDividerONpin, HIGH);
-        delay(200);
-        digitalWrite(vDividerONpin, LOW);
-        Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
-        Serial.println("Solar Heater ON");
-    }
-}
-Timer testingSolarTimer(10000, test_of_Solar_Charger); // Should maybe have two or three timers with success flags for each.
-
-
-void test_of_Low_Battery_Voltage() {
-    if (read12vBatteryVoltage() < 3200) {
-        testingLowBattery = false;
-        solarHeaterON = false;
-        digitalWrite(vDividerOFFpin, HIGH);
-        delay(200);
-        digitalWrite(vDividerOFFpin, LOW);
-        Particle.publish("Solar Heater OFF due to low battery", PRIVATE, NO_ACK);
-        Serial.println("Solar Heater OFF due to low battery");
-    }
-}
-Timer testingLowBatteryTimer(10000, test_of_Low_Battery_Voltage);
-
-
-void test_of_Low_Light_Level() {
-    if (lux < 800) {
-        testingLowLight = false;
-        solarHeaterON = false;
-        digitalWrite(vDividerOFFpin, HIGH);
-        delay(200);
-        digitalWrite(vDividerOFFpin, LOW);
-        Particle.publish("Solar Heater OFF due to low light levels", PRIVATE, NO_ACK);
-        Serial.println("Solar Heater OFF due to low light levels");
-    }
-}
-Timer testingLowLightTimer(300000, test_of_Low_Light_Level);
-
-
-void turnONsolarHeater(void) 
-{
-    if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 1000) {
-        if (testingSolarCharger == false && read12vBatteryVoltage() > 3475) {
-            testingSolarCharger = true;
-            testingSolarTimer.start();
-            Particle.publish("Solar Heater waiting...", PRIVATE, NO_ACK);
-            Serial.println("Solar Heater waiting...");
-            
-            // Other stuff to do when preparing to start the solar heater
-
-        }
-        if (testingSolarTimer.isActive()) {
-            // Anything that needs to be done while testing Solar Charger voltage.
-            return;
-        }
-
-    } else {
-        // do anything that should be done while solarHeater is ON. (like provide a reason for no activation)
-    }
-
-}
-
-void turnOFFsolarHeater(void)
-{
-    if (solarHeaterON == true && Time.hour() > Time_for_SolarHeater_OFF) {
-        solarHeaterON = false;
-        digitalWrite(vDividerOFFpin, HIGH);
-        delay(200);
-        digitalWrite(vDividerOFFpin, LOW);
-        Particle.publish("Solar Heater OFF to charge battery for the night", PRIVATE, NO_ACK);
-        Serial.println("Solar Heater OFF to charge battery for the night");
-    }
-    if (!testingLowLightTimer.isActive()) {
-        if (solarHeaterON == true && lux < 800) {
-            testingLowLight = true;
-            testingLowLightTimer.start();
-        }
-    }
-    if (!testingLowBatteryTimer.isActive()) {
-        if (solarHeaterON == true && read12vBatteryVoltage() < 3300) {
-            testingLowBattery = true;
-            testingLowBatteryTimer.start();
-        }
-    }
-
-}
-
 
 /**************************************************************************/
 /*
@@ -504,6 +366,200 @@ void set_wake_time(void)
     //Serial.println("Particle.publish sent");
     wakeSeconds = wakeTime * 60;
 }
+
+
+/**************************************************************************/
+/*
+    Turn on (then off) voltage divider to read 12v Battery Voltage
+*/
+/**************************************************************************/
+#define vDividerONpin D13
+#define vDividerOFFpin D8
+#define vDividerREADpin A5
+
+int read12vBatteryVoltage(void)
+{
+    //pinMode(vDividerONpin, OUTPUT); // moved to setup()
+    //pinMode(vDividerOFFpin, OUTPUT);
+    //pinMode(vDividerREADpin, INPUT);
+    digitalWrite(vDividerONpin, HIGH);
+    delay(200);
+    digitalWrite(vDividerONpin, LOW);
+    delay(500);
+    int batteryReading12v = analogRead(vDividerREADpin);
+    digitalWrite(vDividerOFFpin, HIGH);
+    delay(200);
+    digitalWrite(vDividerOFFpin, LOW);
+    return batteryReading12v;
+}
+
+
+/**************************************************************************/
+/*
+    Monitor 12v battery for high voltage and turn on solar dump load to use excess photovoltaic power
+        and turn off solar dump load when battery voltage drops.
+*/
+/**************************************************************************/
+#define relay0pin D2
+#define relay1pin D3
+#define relay2pin D4
+#define relay3pin D5
+
+#define Time_for_SolarHeater_ON 10 //10:00 AM 
+#define Time_for_SolarHeater_OFF 15 //3:00 PM
+#define MAX_SolarHeater_ON_Time 240000 // in millis
+#define Supercap_Charging_Period 30000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
+#define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+
+bool testingSolarCharger = false;
+bool testingLowBattery = false;
+bool testingLowLight = false;
+bool solarHeaterON = false;
+
+void test_of_Solar_Charger() {
+    if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
+        testingSolarCharger = false;
+        solarHeaterON = true;
+        digitalWrite(vDividerONpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerONpin, LOW);
+        Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
+        Serial.println("Solar Heater ON");
+    }
+}
+Timer testingSolarTimer(10000, test_of_Solar_Charger, true); // Should maybe have two or three timers with success flags for each.
+
+
+void test_of_Low_Battery_Voltage() {
+    if (read12vBatteryVoltage() < 3200) { // ~12.0v
+        testingLowBattery = false;
+        solarHeaterON = false;
+        digitalWrite(vDividerOFFpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerOFFpin, LOW);
+        Particle.publish("Solar Heater OFF due to low battery", PRIVATE, NO_ACK);
+        Serial.println("Solar Heater OFF due to low battery");
+    }
+}
+Timer testingLowBatteryTimer(10000, test_of_Low_Battery_Voltage, true);
+
+
+void test_of_Low_Light_Level() {
+    if (lux < 800) {
+        testingLowLight = false;
+        solarHeaterON = false;
+        digitalWrite(vDividerOFFpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerOFFpin, LOW);
+        Particle.publish("Solar Heater OFF due to low light levels", PRIVATE, NO_ACK);
+        Serial.println("Solar Heater OFF due to low light levels");
+    }
+}
+Timer testingLowLightTimer(300000, test_of_Low_Light_Level, true);
+
+
+// call this Timer with pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000)
+void pauseSolarHeater() {
+    digitalWrite(relay1pin, LOW);
+    digitalWrite(relay2pin, LOW);
+    digitalWrite(relay3pin, LOW);
+    digitalWrite(vDividerOFFpin, HIGH);
+    delay(200);
+    digitalWrite(vDividerOFFpin, LOW);
+    set_wake_time();
+    System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+}
+// Call this timer with the following function to replace the System.sleep period with a SolarHeater period
+//pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000);
+Timer pause_for_Sensors_Timer(540000, pauseSolarHeater, true);
+
+
+bool reset_BatteryRecoveryTimer = false;
+
+void transition_from_Battery_Recovery_out() {
+    int highestReading12vBattery = analogRead(vDividerREADpin);
+    if (highestReading12vBattery < 3400) {
+        Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE, WITH_ACK);
+        reset_BatteryRecoveryTimer = true;
+    }
+}
+Timer BatteryRecoveryTimer(Battery12v_Recovery_Period, transition_from_Battery_Recovery_out, true);
+
+
+void transition_from_Solar_Heater_to_Battery_Recovery() {
+    digitalWrite(relay1pin, LOW);
+    delay(100);
+    int lowestReading12vBattery = analogRead(vDividerREADpin);
+    if (lowestReading12vBattery < 3250) {
+        //Particle.publish("12v battery voltage very low under load from Solar Heater", PRIVATE);
+    }
+    BatteryRecoveryTimer.start();
+}
+Timer SolarHeaterTimer(MAX_SolarHeater_ON_Time, transition_from_Solar_Heater_to_Battery_Recovery, true);
+
+
+void transition_from_Supercap_Charger_to_Solar_Heater() {
+    digitalWrite(relay2pin, LOW);
+    digitalWrite(relay3pin, LOW);
+    delay(100); // let relay connections break before connecting high current load
+    SolarHeaterTimer.start();
+    digitalWrite(relay1pin, HIGH);
+    // turn on high power heater, connected to D7
+    int priorReading12vBattery = analogRead(vDividerREADpin);
+}
+Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Charger_to_Solar_Heater, true);
+
+
+
+
+void turnONsolarHeater(void) 
+{
+    if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 1000) {
+        if (testingSolarCharger == false && read12vBatteryVoltage() > 3475) { // ~13.0v
+            testingSolarCharger = true;
+            testingSolarTimer.start();
+            Particle.publish("Solar Heater waiting...", PRIVATE, NO_ACK);
+            Serial.println("Solar Heater waiting...");
+            
+            // Other stuff to do when preparing to start the solar heater
+
+        }
+        if (testingSolarTimer.isActive()) {
+            // Anything that needs to be done while testing Solar Charger voltage.
+            return;
+        }
+
+    } else {
+        // do anything that should be done while solarHeater is ON. (like provide a reason for no activation)
+    }
+
+}
+
+void turnOFFsolarHeater(void)
+{
+    if (solarHeaterON == true && Time.hour() > Time_for_SolarHeater_OFF) {
+        solarHeaterON = false;
+        digitalWrite(vDividerOFFpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerOFFpin, LOW);
+        Particle.publish("Solar Heater OFF to charge battery for the night", PRIVATE, NO_ACK);
+        Serial.println("Solar Heater OFF to charge battery for the night");
+    }
+    if (!testingLowLightTimer.isActive()) {
+        if (solarHeaterON == true && lux < 800) {
+            testingLowLight = true;
+            testingLowLightTimer.start();
+        }
+    }
+    if (!testingLowBatteryTimer.isActive()) {
+        if (solarHeaterON == true && read12vBatteryVoltage() < 3300) { // ~12.3v
+            testingLowBattery = true;
+            testingLowBatteryTimer.start();
+        }
+    }
+
+}
+
 
 /**************************************************************************/
 /*
@@ -575,7 +631,8 @@ void setup()
   // Initialize the INA219.
   // By default the initialization will use the largest range (32V, 2A).  However
   // you can call a setCalibration function to change this range (see comments in example .ino).
-  if(!ina219.begin())
+  ina219.begin();
+  if(ina219.getBusVoltage_V() == 0) // This isn't how this should work...
   {
       Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
       Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
@@ -837,7 +894,7 @@ void loop()
   }
   */
 
-  // Conditional statement for Publishing to Google Cloud Platform: NEED TO UPDATE WITH A FLAG FOR ONEWIRE ADDRESSES BECAUSE THEY USE void loop() to capture more than one sensor reading
+  // Conditional statement for Publishing to Google Cloud Platform
   if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
 
       //FuelGauge fuel; //Electron code
@@ -902,7 +959,7 @@ void loop()
     I2C_sensors_finished = false;
     ONEWIRE_sensors_finished = false; 
     // only two of these strings can fit in the 255 bytes that Particle.publish is limited to.
-    // Figure out how to fit more data in a signle publish!  --oh, oh, I know! DeviceOS v0.8.0 supports up to 622 bytes of data!
+    // Figure out how to fit more data in a single publish!  --oh, oh, I know! DeviceOS v0.8.0 supports up to 622 bytes of data!
     //sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
     
     //Particle.connect();
@@ -981,6 +1038,17 @@ void loop()
                     break;
           }
 
+          I2C_sensors_finished = false;
+          ONEWIRE_sensors_finished = false;
+          
+
+          if (batteryReading12v > 3475 && lux > 1000) {
+              turnONsolarHeater(); // ~13.0v
+          }
+          if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) {
+              turnOFFsolarHeater();
+          }
+
           if (testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
               // THIS MIGHT BE BETTER AS A SERIES OF FOR LOOPS TO LIMIT THE CHANCE FOR BLOCKING
               while (testingSolarTimer.isActive()) {
@@ -995,27 +1063,96 @@ void loop()
           }
 
           while (solarHeaterON == true) {
-              currentMillis = millis();
-              if (currentMillis - start_of_supercap_chargeMillis > Supercap_Charging_Period) {
+
+              int currentReading12vBattery = analogRead(vDividerREADpin);
+              if (currentReading12vBattery < 3200) {
+                  digitalWrite(relay1pin, LOW);
+                  digitalWrite(relay2pin, LOW);
+                  digitalWrite(relay3pin, LOW);
+                  pause_for_Sensors_Timer.dispose();
+                  SupercapChargerTimer.dispose();
+                  SolarHeaterTimer.dispose();
+                  BatteryRecoveryTimer.dispose();
+                  //debugging publish, remove if this works:
+                  Particle.publish("Very low battery under load from Solar Heater", PRIVATE);
+
+                  break;
+                  // this break uses the system.sleep below this while loop
+              } // else if (currentReading12vBattery > 3400) {}
+
+              if (reset_BatteryRecoveryTimer == true) {
+                  reset_BatteryRecoveryTimer = false;
+                  BatteryRecoveryTimer.reset();
+              }
+
+              if (!SolarHeaterTimer.isActive() && !BatteryRecoveryTimer.isActive()) {
+                  if (SupercapChargerTimer.isActive()) {
+                      if (ina219.getCurrent_mA() > -300) {
+                          digitalWrite(relay2pin, LOW);
+                          digitalWrite(relay3pin, LOW);
+                          SupercapChargerTimer.dispose();
+                          delay(100); // allow relay connection to break before connecting large load
+                          SolarHeaterTimer.start();
+                          digitalWrite(relay1pin, HIGH);
+                          // turn on high power heater, connected to D7
+                          int priorReading12vBattery = analogRead(vDividerREADpin);
+                      }
+                  } else {
+                      digitalWrite(relay3pin, HIGH);
+                      digitalWrite(relay2pin, HIGH);
+                      SupercapChargerTimer.start();
+                      delay(500); // avoid reading the peak current into supercapacitor with INA219
+                  }
+              }
+
+              if (BatteryRecoveryTimer.isActive()) {
+                  if (currentReading12vBattery > 3775) {
+                      BatteryRecoveryTimer.dispose();
+                      digitalWrite(relay3pin, HIGH);
+                      digitalWrite(relay2pin, HIGH);
+                      SupercapChargerTimer.start();
+                      delay(500); // avoid reading the peak current into supercapacitor with INA219
+                  }
+              }
+
+              if (SolarHeaterTimer.isActive()) {
+                  if (currentReading12vBattery < 3350) {
+                      digitalWrite(relay1pin, LOW);
+                      SolarHeaterTimer.dispose();
+                      delay(100);
+                      int lowestReading12vBattery = analogRead(vDividerREADpin);
+                      if (lowestReading12vBattery < 3250) {
+                          //debugging publish, remove if this works:
+                          Particle.publish("Low battery under load from Solar Heater", PRIVATE);
+
+                          break;
+                          // this break uses the system.sleep below this while loop
+                      }
+                      BatteryRecoveryTimer.start();
+                  }
+              }
+
+              //long currentMillis = millis();
+              /*if (currentMillis - start_of_supercap_chargeMillis > Supercap_Charging_Period) {
                   digitalWrite(relay2pin, LOW);
                   digitalWrite(relay3pin, LOW);
                   delay(100);
                   digitalWrite(relay1pin, HIGH);
                   // turn on high power heater, connected to D7
                   int priorReading12vBattery = analogRead(vDividerREADpin);
-                  start_of_solarHeaterMillis = millis();
-              }
-              if (currentMillis - start_of_solarHeaterMillis > MAX_SolarHeater_ON_Time) {
+                  long start_of_solarHeaterMillis = millis();
+              }*/
+              /*if (currentMillis - start_of_solarHeaterMillis > MAX_SolarHeater_ON_Time) {
                   digitalWrite(relay1pin, LOW);
                   delay(100);
                   int lowestReading12vBattery = analogRead(vDividerREADpin);
-                  start_of_RecoveryPeriodMillis = millis();
+                  long start_of_RecoveryPeriodMillis = millis();
                   if (lowestReading12vBattery < 3250) {
                       break;
                   }
                   //return;
-              }
-              if (currentMillis - start_of_RecoveryPeriodMillis > Battery12v_Recovery_Period) {
+              }*/
+              /*if (currentMillis - start_of_RecoveryPeriodMillis > Battery12v_Recovery_Period) {
                   int highestReading12vBattery = analogRead(vDividerREADpin);
                   if (highestReading12vBattery < 3475) {
                       Particle.process();
@@ -1024,25 +1161,25 @@ void loop()
                   if (highestReading12vBattery > 3475) {
                       digitalWrite(relay3pin, HIGH);
                       digitalWrite(relay2pin, HIGH);
-                      start_of_supercap_chargeMillis = millis();
+                      long start_of_supercap_chargeMillis = millis();
                   } else {
                       break;
                   }
                   //digitalWrite(relay3pin, HIGH);
                   //digitalWrite(relay2pin, HIGH);
                   //start_of_supercap_chargeMillis = millis();
-              }
-              if (lowestReading12vBattery < 3375 || analogRead(vDividerREADpin) < 3375) {
+              }*/
+              /*if (lowestReading12vBattery < 3375 || analogRead(vDividerREADpin) < 3375) {
                   digitalWrite(relay1pin, LOW);
                   delay(100);
                   digitalWrite(relay3pin, HIGH);
                   digitalWrite(relay2pin, HIGH);
-                  start_of_supercap_chargeMillis = millis();
-              }
-              if (ina219.getCurrent_mA() > 2500 || ina219.getCurrent_mA() < -2500) {
+                  long start_of_supercap_chargeMillis = millis();
+              }*/
+              /*if (ina219.getCurrent_mA() > 2500 || ina219.getCurrent_mA() < -2500) {
                   continue;
-              }
-              if (currentMillis - start_of_supercap_chargeMillis < Supercap_Charging_Period && ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+              }*/
+              /*if (currentMillis - start_of_supercap_chargeMillis < Supercap_Charging_Period && ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
                   //float busvoltage = 0;
                   //float current_mA = 0;
                   //busvoltage = ina219.getBusVoltage_V();
@@ -1053,22 +1190,17 @@ void loop()
                   digitalWrite(relay1pin, HIGH);
                   // turn on high power heater, connected to D7
                   int priorReading12vBattery = analogRead(vDividerREADpin);
-                  start_of_solarHeaterMillis = millis();
-              }
+                  long start_of_solarHeaterMillis = millis();
+              }*/
               Particle.process();
               //digitalWrite(relay3pin, HIGH);
               //digitalWrite(relay2pin), HIGH);
-
-
-              
           }
 
           // all retained variables should have been updated so go to SLEEP_MODE_DEEP until next measurement
           // BUT NOT ON THE ARGON 0.8.0_rc27!!!!!!!!!!!!!!!!!!
           set_wake_time();
 
-          I2C_sensors_finished = false;
-          ONEWIRE_sensors_finished = false;
           
           Serial.println("sensors updated ...going to sleep");
           // 0.8.0_rc27 version of Argon does not have sleep or backup registers implemented.
