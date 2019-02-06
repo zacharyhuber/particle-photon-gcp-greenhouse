@@ -609,6 +609,13 @@ void setup()
   pinMode(vDividerOFFpin, OUTPUT);
   pinMode(vDividerREADpin, INPUT);
 
+  digitalWrite(relay0pin, LOW);
+  digitalWrite(relay1pin, LOW);
+  digitalWrite(relay2pin, LOW);
+  digitalWrite(relay3pin, LOW);
+  digitalWrite(vDividerONpin, LOW);
+  digitalWrite(vDividerOFFpin, LOW);
+
 
   Serial.println("Light Sensor Test"); Serial.println("");
   //~photon code~Particle.publish("Testing TSL2561"); //REMOVE FROM setup() for semi-automatic particle.connect control
