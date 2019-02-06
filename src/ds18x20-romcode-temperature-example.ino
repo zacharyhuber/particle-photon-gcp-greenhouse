@@ -980,7 +980,7 @@ void loop()
                 delay(60000); 
             }
             */
-           if (batteryVoltage3v < 3.6) {
+           if (batteryVoltage3v < 3.56) {
                Particle.publish("Low Battery... sleeping for 1 hour", String(batteryVoltage3v), PRIVATE);
                Particle.process();
                delay(3000);
