@@ -386,7 +386,11 @@ int read12vBatteryVoltage(void)
     delay(200);
     digitalWrite(vDividerONpin, LOW);
     delay(500);
-    int batteryReading12v = analogRead(vDividerREADpin);
+    float batteryReading12v = analogRead(vDividerREADpin);
+    batteryReading12v = (batteryReading12v + analogRead(vDividerREADpin)) / 2;
+    batteryReading12v = (batteryReading12v + analogRead(vDividerREADpin)) / 2;
+    batteryReading12v = (batteryReading12v + analogRead(vDividerREADpin)) / 2;
+    batteryReading12v = (batteryReading12v + analogRead(vDividerREADpin)) / 2;
     digitalWrite(vDividerOFFpin, HIGH);
     delay(200);
     digitalWrite(vDividerOFFpin, LOW);
@@ -458,22 +462,6 @@ void test_of_Low_Light_Level() {
 Timer testingLowLightTimer(300000, test_of_Low_Light_Level, true);
 
 
-// call this Timer with pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000)
-void pauseSolarHeater() {
-    digitalWrite(relay1pin, LOW);
-    digitalWrite(relay2pin, LOW);
-    digitalWrite(relay3pin, LOW);
-    digitalWrite(vDividerOFFpin, HIGH);
-    delay(200);
-    digitalWrite(vDividerOFFpin, LOW);
-    set_wake_time();
-    System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-}
-// Call this timer with the following function to replace the System.sleep period with a SolarHeater period
-//pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000);
-Timer pause_for_Sensors_Timer(540000, pauseSolarHeater, true);
-
-
 bool reset_BatteryRecoveryTimer = false;
 
 void transition_from_Battery_Recovery_out() {
@@ -510,6 +498,25 @@ void transition_from_Supercap_Charger_to_Solar_Heater() {
 Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Charger_to_Solar_Heater, true);
 
 
+// call this Timer with pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000)
+void pauseSolarHeater() {
+    digitalWrite(relay1pin, LOW);
+    digitalWrite(relay2pin, LOW);
+    digitalWrite(relay3pin, LOW);
+    SupercapChargerTimer.dispose();
+    SolarHeaterTimer.dispose();
+    BatteryRecoveryTimer.dispose();
+    digitalWrite(vDividerOFFpin, HIGH);
+    delay(200);
+    digitalWrite(vDividerOFFpin, LOW);
+    set_wake_time();
+    System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+    delay(wakeSeconds * 1000); // v0.8.0-rc.27 of DeviceOS does not have sleep functions enabled, so delay until appropriate wake time.
+    System.reset();
+}
+// Call this timer with the following function to replace the System.sleep period with a SolarHeater period
+//pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000);
+Timer pause_for_Sensors_Timer(540000, pauseSolarHeater, true);
 
 
 void turnONsolarHeater(void) 
@@ -617,6 +624,18 @@ void setup()
   digitalWrite(vDividerOFFpin, LOW);
 
 
+  // Initialize the INA219.
+  // By default the initialization will use the largest range (32V, 2A).  However
+  // you can call a setCalibration function to change this range (see comments in example .ino).
+  ina219.begin();
+  if(ina219.getBusVoltage_V() == 0) // This isn't how this should work...
+  {
+      Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
+      Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
+  }
+  //~photon code~Particle.publish("INA219 connected. Reading supercapacitor current(mA) and voltage:", String(ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
+
+
   Serial.println("Light Sensor Test"); Serial.println("");
   //~photon code~Particle.publish("Testing TSL2561"); //REMOVE FROM setup() for semi-automatic particle.connect control
 
@@ -634,16 +653,6 @@ void setup()
   // Setup the sensor gain and integration time
   configureSensor();
 
-
-  // Initialize the INA219.
-  // By default the initialization will use the largest range (32V, 2A).  However
-  // you can call a setCalibration function to change this range (see comments in example .ino).
-  ina219.begin();
-  if(ina219.getBusVoltage_V() == 0) // This isn't how this should work...
-  {
-      Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
-      Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
-  }
 
 
   Serial.println("HDC100x test");
@@ -1070,6 +1079,14 @@ void loop()
           }
 
           while (solarHeaterON == true) {
+              if (!pause_for_Sensors_Timer.isActive()) {
+                  set_wake_time();
+                  if (wakeSeconds < 60) {
+                      break;
+                  }
+                  pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000);
+                  Particle.publish("Solar Heating Period starting. Time remaining:", String(wakeSeconds - 60), PRIVATE);
+              }
 
               int currentReading12vBattery = analogRead(vDividerREADpin);
               if (currentReading12vBattery < 3200) {
