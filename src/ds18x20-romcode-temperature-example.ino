@@ -260,7 +260,7 @@ double heattankTemp = 0;
 double ambientTempC = 0;
 double ambientTempF = 0;
 double ambientHumidity = 0;
-long lux = 0;
+float lux = 0; // As specified for event.light by Unified Sensor Library
 //int brightness = 0;
     //=========================================================================
 
