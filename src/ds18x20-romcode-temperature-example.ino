@@ -260,7 +260,7 @@ double heattankTemp = 0;
 double ambientTempC = 0;
 double ambientTempF = 0;
 double ambientHumidity = 0;
-double lux = 0;
+long lux = 0;
 //int brightness = 0;
     //=========================================================================
 
@@ -301,9 +301,9 @@ void displaySensorDetails(void)
 void configureSensor(void)
 {
   /* You can also manually set the gain or enable auto-gain support */
-  tsl.setGain(TSL2561_GAIN_1X);      /* No gain ... use in bright light to avoid sensor saturation */
+  //tsl.setGain(TSL2561_GAIN_1X);      /* No gain ... use in bright light to avoid sensor saturation */
   // tsl.setGain(TSL2561_GAIN_16X);     /* 16x gain ... use in low light to boost sensitivity */
-  // tsl.enableAutoRange(true);            /* Auto-gain ... switches automatically between 1x and 16x */
+  tsl.enableAutoRange(true);            /* Auto-gain ... switches automatically between 1x and 16x */
 
   /* Changing the integration time gives you better sensor resolution (402ms = 16-bit data) */
   // tsl.setIntegrationTime(TSL2561_INTEGRATIONTIME_13MS);      /* fast but low resolution */
@@ -1071,6 +1071,8 @@ void loop()
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
           if (batteryReading12v > 3000 && lux > 1000) { // >13.1v with diode-scewed GND
               turnONsolarHeater();
+          } else if (lux == 0) {
+              Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
           }
           //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ~12.0v
           if (batteryReading12v < 2400 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
