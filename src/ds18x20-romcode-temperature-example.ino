@@ -494,9 +494,12 @@ void transition_from_Supercap_Charger_to_Solar_Heater() {
     digitalWrite(relay1pin, HIGH);
     // turn on high power heater, connected to D7
     int priorReading12vBattery = analogRead(vDividerREADpin);
+    Particle.publish("Supercapacitor Charging timed out.  capacitor Voltage / 12vBattery Voltage: ", String(ina219.getBusVoltage_V(), priorReading12vBattery), PRIVATE);
 }
 Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Charger_to_Solar_Heater, true);
 
+
+bool solarHeaterPAUSE = false;
 
 // call this Timer with pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000)
 void pauseSolarHeater() {
@@ -509,10 +512,11 @@ void pauseSolarHeater() {
     digitalWrite(vDividerOFFpin, HIGH);
     delay(200);
     digitalWrite(vDividerOFFpin, LOW);
-    set_wake_time();
-    System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-    delay(wakeSeconds * 1000); // v0.8.0-rc.27 of DeviceOS does not have sleep functions enabled, so delay until appropriate wake time.
-    System.reset();
+    solarHeaterPAUSE = true; // This should immediately break the while loop for the solarHeater
+    //set_wake_time();
+    //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+    //delay(wakeSeconds * 1000); // v0.8.0-rc.27 of DeviceOS does not have sleep functions enabled, so delay until appropriate wake time.
+    //System.reset();
 }
 // Call this timer with the following function to replace the System.sleep period with a SolarHeater period
 //pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000);
@@ -616,14 +620,7 @@ void setup()
   pinMode(vDividerOFFpin, OUTPUT);
   pinMode(vDividerREADpin, INPUT);
 
-  digitalWrite(relay0pin, LOW);
-  digitalWrite(relay1pin, LOW);
-  digitalWrite(relay2pin, LOW);
-  digitalWrite(relay3pin, LOW);
-  digitalWrite(vDividerONpin, LOW);
-  digitalWrite(vDividerOFFpin, LOW);
-
-
+  // ****** PLACED INA219 ~.publish HERE TO CHECK WHAT IS GOING ON WITH RELAYS TRIGGERING PRIOR TO setup() ****
   // Initialize the INA219.
   // By default the initialization will use the largest range (32V, 2A).  However
   // you can call a setCalibration function to change this range (see comments in example .ino).
@@ -633,7 +630,16 @@ void setup()
       Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
       Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
   }
-  //~photon code~Particle.publish("INA219 connected. Reading supercapacitor current(mA) and voltage:", String(ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
+  Particle.publish("INA219 connected. Reading supercapacitor current(mA) and voltage:", String(ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
+  // ************************** MOVE TO BELOW pin SETUP *******************************************************
+
+  digitalWrite(relay0pin, LOW);
+  digitalWrite(relay1pin, LOW);
+  digitalWrite(relay2pin, LOW);
+  digitalWrite(relay3pin, LOW);
+  digitalWrite(vDividerONpin, LOW);
+  digitalWrite(vDividerOFFpin, LOW);
+
 
 
   Serial.println("Light Sensor Test"); Serial.println("");
@@ -1078,7 +1084,7 @@ void loop()
               }
           }
 
-          while (solarHeaterON == true) {
+          while (solarHeaterON == true && solarHeaterPAUSE == false) {
               if (!pause_for_Sensors_Timer.isActive()) {
                   set_wake_time();
                   if (wakeSeconds < 60) {
@@ -1126,6 +1132,7 @@ void loop()
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
                       delay(500); // avoid reading the peak current into supercapacitor with INA219
+                      Particle.publish("Supercapacitor Charger ON. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE);
                   }
               }
 
@@ -1155,6 +1162,7 @@ void loop()
                       BatteryRecoveryTimer.start();
                   }
               }
+              solarHeaterPAUSE = false;
 
               //long currentMillis = millis();
               /*if (currentMillis - start_of_supercap_chargeMillis > Supercap_Charging_Period) {
