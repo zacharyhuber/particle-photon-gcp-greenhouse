@@ -409,8 +409,8 @@ int read12vBatteryVoltage(void)
 #define relay2pin D4
 #define relay3pin D5
 
-#define Time_for_SolarHeater_ON 10 //10:00 AM 
-#define Time_for_SolarHeater_OFF 15 //3:00 PM
+#define Time_for_SolarHeater_ON 16 //10:00 AM CST (4:00 PM UTC)
+#define Time_for_SolarHeater_OFF 23 //3:00 PM CST (9:00 PM UTC) // ****CHANGE BACK TO "21" after DEBUGGING ***********
 #define MAX_SolarHeater_ON_Time 240000 // in millis
 #define Supercap_Charging_Period 30000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
@@ -546,6 +546,7 @@ void turnONsolarHeater(void)
         }
 
     } else {
+        Particle.publish("turnOnsolarHeater conditions not met", PRIVATE); //debug
         // do anything that should be done while solarHeater is ON. (like provide a reason for no activation)
     }
 
@@ -1069,8 +1070,10 @@ void loop()
           ONEWIRE_sensors_finished = false;
           
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
-          if (batteryReading12v > 3000 && lux > 1000) { // >13.1v with diode-scewed GND
+          if (batteryReading12v > 2700 && lux > 1000) { // ~13.0v with diode-scewed GND
               turnONsolarHeater();
+              Particle.publish("debug turnONsolarHeater", PRIVATE);
+              delay(4000);
           } else if (lux == 0) {
               Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
           }
