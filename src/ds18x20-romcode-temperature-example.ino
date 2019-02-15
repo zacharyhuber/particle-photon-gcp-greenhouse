@@ -422,21 +422,33 @@ bool solarHeaterON = false;
 
 void test_of_Solar_Charger() {
     //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
-    if (read12vBatteryVoltage() > 2700) { // ~13.0v with diode-skewed GND
+    if (analogRead(vDividerREADpin) > 2700) { // ~13.0v with diode-skewed GND // DEBUG switched vDividerON earlier in flow
+        // ******** DEBUG CODE **********
+        Particle.publish("debug test_of_Solar_Charger callback function starting...", PRIVATE, WITH_ACK);
+        Particle.process();
+        delay(4000);
+        // ****** END DEBUG CODE ********
         testingSolarCharger = false;
-        solarHeaterON = true;
-        digitalWrite(vDividerONpin, HIGH);
-        delay(200);
-        digitalWrite(vDividerONpin, LOW);
+        // moved solarHeaterON to end of function.  I don't think this should matter...
+        
+        //digitalWrite(vDividerONpin, HIGH); // DEBUG moved to earlier in flow
+        //delay(200); // DEBUG moved to earlier in flow
+        //digitalWrite(vDividerONpin, LOW); // DEBUG moved to earlier in flow
         Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
         // ******** DEBUG CODE **********
         Particle.process();
-        delay(1000);
+        delay(4000);
         // ****** END DEBUG CODE ********
-        Serial.println("Solar Heater ON");
+        // ***DEBUG FOUND THE PROBLEM?*** Serial.println("Solar Heater ON");
+        solarHeaterON = true; // moved here to DEBUG
     } else {
         Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
         Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
+        delay(4000); // DEBUG
+        digitalWrite(vDividerOFFpin, HIGH);
+        delay(200);
+        digitalWrite(vDividerOFFpin, LOW);
+        delay(500);
     }
 }
 Timer testingSolarTimer(10000, test_of_Solar_Charger, true); // Should maybe have two or three timers with success flags for each.
@@ -552,10 +564,16 @@ Timer pause_for_Sensors_Timer(540000, pauseSolarHeater, true);
 void turnONsolarHeater(void) 
 {
     if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 1000) {
+        
         //if (testingSolarCharger == false && read12vBatteryVoltage() > 3475) { // ~13.0v
         if (testingSolarCharger == false && read12vBatteryVoltage() > 2650) { // ~12.9v with diode-skewed GND
             testingSolarCharger = true;
             testingSolarTimer.start();
+            delay(500); // let vDivider relay demagnetize from read12vBatteryVoltage call
+            digitalWrite(vDividerONpin, HIGH);
+            delay(200);
+            digitalWrite(vDividerONpin, LOW);
+            delay(500);
             Particle.publish("Solar Heater waiting...", PRIVATE, NO_ACK);
             Serial.println("Solar Heater waiting...");
             
@@ -1112,11 +1130,17 @@ void loop()
           if (testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
               // THIS MIGHT BE BETTER AS A SERIES OF FOR LOOPS TO LIMIT THE CHANCE FOR BLOCKING
               // ******** DEBUG CODE **********
-              Particle.publish("debug Looping Particle.process() while testing Timers active", PRIVATE);
+              Particle.publish("debug Looping Particle.process() while testing Timers are active", PRIVATE);
               Particle.process();
               delay(1000);
               // ****** END DEBUG CODE ********
               while (testingSolarTimer.isActive()) {
+                  // ******** DEBUG CODE **********
+                  delay(1000);
+                  Particle.publish("testingSolarTimer.isActive", PRIVATE);
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
                   Particle.process();
               }
               while (testingLowLightTimer.isActive()) {
@@ -1125,6 +1149,7 @@ void loop()
               while (testingLowBatteryTimer.isActive()) {
                   Particle.process();
               }
+              delay(1000); // DEBUG
           }
 
           while (solarHeaterON == true && solarHeaterPAUSE == false) {
