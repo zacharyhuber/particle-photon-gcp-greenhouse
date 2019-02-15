@@ -474,6 +474,10 @@ void transition_from_Battery_Recovery_out() {
     //if (highestReading12vBattery < 3400) {
     if (highestReading12vBattery < 2650) { // <13.0v with diode-skewed GND
         Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE, WITH_ACK);
+        // ******** DEBUG CODE **********
+        Particle.process();
+        delay(1000);
+        // ****** END DEBUG CODE ********
         reset_BatteryRecoveryTimer = true;
     }
 }
@@ -487,6 +491,10 @@ void transition_from_Solar_Heater_to_Battery_Recovery() {
     //if (lowestReading12vBattery < 3250) {
     if (lowestReading12vBattery < 2400) { // ??? 11.5v ??? with diode-skewed GND
         Particle.publish("12v battery voltage very low under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
+        // ******** DEBUG CODE **********
+        Particle.process();
+        delay(1000);
+        // ****** END DEBUG CODE ********
     }
     BatteryRecoveryTimer.start();
 }
@@ -494,14 +502,21 @@ Timer SolarHeaterTimer(MAX_SolarHeater_ON_Time, transition_from_Solar_Heater_to_
 
 
 void transition_from_Supercap_Charger_to_Solar_Heater() {
+    delay(1000); // if Battery Recovery was just called, the Solar Heater relay may not be done switching
     digitalWrite(relay2pin, LOW);
+    delay(1000);
     digitalWrite(relay3pin, LOW);
+    delay(1000); // DEBUG DELAY TO TROUBLESHOOT HARD FAULTS ON ARGON
     delay(100); // let relay connections break before connecting high current load
     SolarHeaterTimer.start();
     digitalWrite(relay1pin, HIGH);
     // turn on high power heater, connected to D7
     int priorReading12vBattery = analogRead(vDividerREADpin);
     Particle.publish("Supercapacitor Charging timed out.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), priorReading12vBattery), PRIVATE);
+    // ******** DEBUG CODE **********
+    Particle.process();
+    delay(1000);
+    // ****** END DEBUG CODE ********
 }
 Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Charger_to_Solar_Heater, true);
 
@@ -563,6 +578,10 @@ void turnOFFsolarHeater(void)
         delay(200);
         digitalWrite(vDividerOFFpin, LOW);
         Particle.publish("Solar Heater OFF to charge battery for the night", PRIVATE, NO_ACK);
+        // ******** DEBUG CODE **********
+        Particle.process();
+        delay(1000);
+        // ****** END DEBUG CODE ********
         Serial.println("Solar Heater OFF to charge battery for the night");
     }
     if (!testingLowLightTimer.isActive()) {
@@ -1107,13 +1126,19 @@ void loop()
                   }
                   pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000);
                   Particle.publish("Solar Heating Period starting. Time remaining:", String(wakeSeconds - 60), PRIVATE, WITH_ACK);
+                  // ******** DEBUG CODE **********
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
               }
 
               int currentReading12vBattery = analogRead(vDividerREADpin);
               //if (currentReading12vBattery < 3200) { // ~12.0v
               if (currentReading12vBattery < 2300) { // ??? 12.0v ??? with diode-skewed GND
                   digitalWrite(relay1pin, LOW);
+                  delay(500);
                   digitalWrite(relay2pin, LOW);
+                  delay(500);
                   digitalWrite(relay3pin, LOW);
                   pause_for_Sensors_Timer.dispose();
                   SupercapChargerTimer.dispose();
@@ -1121,6 +1146,10 @@ void loop()
                   BatteryRecoveryTimer.dispose();
                   //debugging publish, remove if this works:
                   Particle.publish("Very low battery under load from Solar Heater", PRIVATE, WITH_ACK);
+                  // ******** DEBUG CODE **********
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
 
                   break;
                   // this break uses the system.sleep below this while loop
@@ -1135,33 +1164,49 @@ void loop()
                   if (SupercapChargerTimer.isActive()) {
                       if (ina219.getCurrent_mA() > -300) {
                           digitalWrite(relay2pin, LOW);
+                          delay(1000);
                           digitalWrite(relay3pin, LOW);
                           SupercapChargerTimer.dispose();
-                          delay(100); // allow relay connection to break before connecting large load
+                          delay(1000); // allow relay connection to break before connecting large load
                           SolarHeaterTimer.start();
                           digitalWrite(relay1pin, HIGH);
                           // turn on high power heater, connected to D7
                           int priorReading12vBattery = analogRead(vDividerREADpin);
                           Particle.publish("Solar Heating Element STARTED. Supercapacitor current(mA)", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
                       }
                   } else {
                       digitalWrite(relay3pin, HIGH);
+                      delay(1000);
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
                       delay(500); // avoid reading the peak current into supercapacitor with INA219
                       Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
                   }
               }
 
               if (BatteryRecoveryTimer.isActive()) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
                   if (currentReading12vBattery > 3050) { // ???>13.4v??? with diode-skewed GND
+                      delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                       BatteryRecoveryTimer.dispose();
                       digitalWrite(relay3pin, HIGH);
+                      delay(1000);
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
                       delay(500); // avoid reading the peak current into supercapacitor with INA219
                       Particle.publish("Supercapacitor Charger ON. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
                   }
               }
 
@@ -1176,12 +1221,20 @@ void loop()
                       if (lowestReading12vBattery < 2350) { // ???~12.2v??? with diode-skewed GND
                           //debugging publish, remove if this works:
                           Particle.publish("Low battery under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
 
                           break;
                           // this break uses the system.sleep below this while loop
                       }
                       BatteryRecoveryTimer.start();
                       Particle.publish("Battery Recovery STARTED. Supercapacitor Voltage:", String(ina219.getBusVoltage_V()), PRIVATE, WITH_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
                   }
               }
               
