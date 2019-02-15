@@ -429,6 +429,10 @@ void test_of_Solar_Charger() {
         delay(200);
         digitalWrite(vDividerONpin, LOW);
         Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
+        // ******** DEBUG CODE **********
+        Particle.process();
+        delay(1000);
+        // ****** END DEBUG CODE ********
         Serial.println("Solar Heater ON");
     } else {
         Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
@@ -1093,6 +1097,7 @@ void loop()
           
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
           if (batteryReading12v > 2700 && lux > 1000) { // ~13.0v with diode-skewed GND
+              delay(1000); // DEBUG rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
               turnONsolarHeater();
               Particle.publish("debug turnONsolarHeater", PRIVATE);
               delay(4000);
@@ -1106,6 +1111,11 @@ void loop()
 
           if (testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
               // THIS MIGHT BE BETTER AS A SERIES OF FOR LOOPS TO LIMIT THE CHANCE FOR BLOCKING
+              // ******** DEBUG CODE **********
+              Particle.publish("debug Looping Particle.process() while testing Timers active", PRIVATE);
+              Particle.process();
+              delay(1000);
+              // ****** END DEBUG CODE ********
               while (testingSolarTimer.isActive()) {
                   Particle.process();
               }
@@ -1118,6 +1128,11 @@ void loop()
           }
 
           while (solarHeaterON == true && solarHeaterPAUSE == false) {
+              // ******** DEBUG CODE **********
+              Particle.publish("debug YOU HAVE REACHED THE WHILE LOOP", PRIVATE, WITH_ACK);
+              Particle.process();
+              delay(5000);
+              // ****** END DEBUG CODE ********
               if (!pause_for_Sensors_Timer.isActive()) {
                   set_wake_time();
                   if (wakeSeconds < 60) {
@@ -1179,6 +1194,11 @@ void loop()
                           // ****** END DEBUG CODE ********
                       }
                   } else {
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
+                      Particle.process();
+                      delay(5000);
+                      // ****** END DEBUG CODE ********
                       digitalWrite(relay3pin, HIGH);
                       delay(1000);
                       digitalWrite(relay2pin, HIGH);
