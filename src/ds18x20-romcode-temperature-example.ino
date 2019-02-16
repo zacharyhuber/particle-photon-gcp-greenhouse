@@ -424,23 +424,23 @@ void test_of_Solar_Charger() {
     //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
     if (analogRead(vDividerREADpin) > 2700) { // ~13.0v with diode-skewed GND // DEBUG switched vDividerON earlier in flow
         // ******** DEBUG CODE **********
-        Particle.publish("debug test_of_Solar_Charger callback function starting...", PRIVATE, WITH_ACK);
-        Particle.process();
-        delay(4000);
+        //Particle.publish("debug test_of_Solar_Charger callback function starting...", PRIVATE, WITH_ACK);
+        //Particle.process();
+        //delay(4000);
         // ****** END DEBUG CODE ********
         testingSolarCharger = false;
-        // moved solarHeaterON to end of function.  I don't think this should matter...
+        solarHeaterON = true;
         
         //digitalWrite(vDividerONpin, HIGH); // DEBUG moved to earlier in flow
         //delay(200); // DEBUG moved to earlier in flow
         //digitalWrite(vDividerONpin, LOW); // DEBUG moved to earlier in flow
-        Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
+        //Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
         // ******** DEBUG CODE **********
-        Particle.process();
-        delay(4000);
+        //Particle.process();
+        //delay(4000);
         // ****** END DEBUG CODE ********
         // ***DEBUG FOUND THE PROBLEM?*** Serial.println("Solar Heater ON");
-        solarHeaterON = true; // moved here to DEBUG
+        
     } else {
         Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
         Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
@@ -1174,7 +1174,7 @@ void loop()
 
               int currentReading12vBattery = analogRead(vDividerREADpin);
               //if (currentReading12vBattery < 3200) { // ~12.0v
-              if (currentReading12vBattery < 2300) { // ??? 12.0v ??? with diode-skewed GND
+              if (currentReading12vBattery < 2200) { // ??? 11.5v ??? with diode-skewed GND // DEBUG this shouldn't have triggered...
                   digitalWrite(relay1pin, LOW);
                   delay(500);
                   digitalWrite(relay2pin, LOW);
@@ -1202,7 +1202,7 @@ void loop()
 
               if (!SolarHeaterTimer.isActive() && !BatteryRecoveryTimer.isActive()) {
                   if (SupercapChargerTimer.isActive()) {
-                      if (ina219.getCurrent_mA() > -300) {
+                      if (ina219.getCurrent_mA() > -300) {  // DEBUG this may need to be reversed " < 300"
                           digitalWrite(relay2pin, LOW);
                           delay(1000);
                           digitalWrite(relay3pin, LOW);
