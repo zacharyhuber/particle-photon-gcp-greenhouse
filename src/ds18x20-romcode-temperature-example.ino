@@ -12,6 +12,12 @@
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
 //SYSTEM_MODE(SEMI_AUTOMATIC);
 
+// ************************** STARTUP CALLS ***********************************
+    // ALL STARTUP() CODE SHOULD BE WITHIN ONE STARTUP(FUNCTION).
+    //=========================================================================
+// set relay I/O pins to LOW as soon as possible on reset to avoid dangerous condition where all relays are ON
+STARTUP( initialize_solar_heater_relays() );
+
     //=========================================================================
 // This makes sure the Photon is using the best wireless signal.
 //~photon code~STARTUP(WiFi.selectAntenna(ANT_AUTO));
@@ -409,6 +415,19 @@ int read12vBatteryVoltage(void)
 #define relay2pin D4
 #define relay3pin D5
 
+//Called in STARTUP() function
+void initialize_solar_heater_relays() {
+    pinMode(relay0pin, OUTPUT);
+    pinMode(relay1pin, OUTPUT);
+    pinMode(relay2pin, OUTPUT);
+    pinMode(relay3pin, OUTPUT);
+
+    digitalWrite(relay0pin, LOW);
+    digitalWrite(relay1pin, LOW);
+    digitalWrite(relay2pin, LOW);
+    digitalWrite(relay3pin, LOW);
+}
+
 #define Time_for_SolarHeater_ON 16 //10:00 AM CST (4:00 PM UTC)
 #define Time_for_SolarHeater_OFF 21 //3:00 PM CST (9:00 PM UTC)
 #define MAX_SolarHeater_ON_Time 240000 // in millis
@@ -661,10 +680,10 @@ void setup()
   //digitalWrite(D2, LOW);
   //digitalWrite(D3, HIGH);
 
-  pinMode(relay0pin, OUTPUT);
-  pinMode(relay1pin, OUTPUT);
-  pinMode(relay2pin, OUTPUT);
-  pinMode(relay3pin, OUTPUT);
+  //pinMode(relay0pin, OUTPUT);
+  //pinMode(relay1pin, OUTPUT);
+  //pinMode(relay2pin, OUTPUT);
+  //pinMode(relay3pin, OUTPUT); //MOVED TO STARTUP() FUNCTION
 
   pinMode(vDividerONpin, OUTPUT);
   pinMode(vDividerOFFpin, OUTPUT);
@@ -683,10 +702,10 @@ void setup()
   Particle.publish("INA219 connected. Reading supercapacitor: ", String::format("current(mA): %.2f / voltage: %.2f", ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
   // ************************** MOVE TO BELOW pin SETUP *******************************************************
 
-  digitalWrite(relay0pin, LOW);
-  digitalWrite(relay1pin, LOW);
-  digitalWrite(relay2pin, LOW);
-  digitalWrite(relay3pin, LOW);
+  //digitalWrite(relay0pin, LOW);
+  //digitalWrite(relay1pin, LOW);
+  //digitalWrite(relay2pin, LOW);
+  //digitalWrite(relay3pin, LOW); //MOVED TO STARTUP() FUNCTION
   digitalWrite(vDividerONpin, LOW);
   digitalWrite(vDividerOFFpin, LOW);
 
@@ -1316,6 +1335,32 @@ void loop()
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
+                  } else if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", PRIVATE, WITH_ACK);
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      //delay(1000); // if relays just switched they may not have demagnetized yet
+                      digitalWrite(relay1pin, LOW);
+                      SolarHeaterTimer.dispose();
+                      delay(1000);
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
+                      Particle.process();
+                      delay(5000);
+                      // ****** END DEBUG CODE ********
+                      digitalWrite(relay3pin, HIGH);
+                      delay(1000);
+                      digitalWrite(relay2pin, HIGH);
+                      SupercapChargerTimer.start();
+                      delay(500); // avoid reading the peak current into supercapacitor with INA219
+                      Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+
                   }
               }
               
