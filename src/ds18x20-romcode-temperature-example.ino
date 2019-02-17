@@ -572,7 +572,7 @@ void pauseSolarHeater() {
     solarHeaterPAUSE = true; // This should immediately break the while loop for the solarHeater
     //set_wake_time();
     //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-    System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+    //System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
     //delay(wakeSeconds * 1000); // v0.8.0-rc.27 of DeviceOS does not have sleep functions enabled, so delay until appropriate wake time.
     //System.reset();
 }
@@ -1069,20 +1069,23 @@ void loop()
                Particle.publish("Low Battery... sleeping for 1 hour", String(batteryVoltage3v), PRIVATE);
                Particle.process();
                delay(3000);
-               System.sleep(SLEEP_MODE_DEEP, 3600000);
-               delay(3600000); // System.sleep is skipped in 0.8.0_rc27 Argon
-               System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
+               //System.sleep(SLEEP_MODE_DEEP, 3600000);
+               System.sleep(D8, RISING, 3600000); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+               //delay(3600000); // System.sleep is skipped in 0.8.0_rc27 Argon
+               System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
            }
-            System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-            delay(wakeSeconds * 1000); // System.sleep is skipped in 0.8.0_rc27 Argon
-            System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
+            //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+            //delay(wakeSeconds * 1000); // System.sleep is skipped in 0.8.0_rc27 Argon
+            System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
             retry_publish();
             set_wake_time();
-            System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-            delay(wakeSeconds * 1000); // System.sleep is skipped in 0.8.0_rc27 Argon
-            System.reset(); // Added to make sure reset occurs if System.sleep() is not implemented in system firmware.
+            //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+            System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+            //delay(wakeSeconds * 1000); // System.sleep is skipped in 0.8.0_rc27 Argon
+            System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     }
     
      // Particle.connect();
@@ -1466,10 +1469,11 @@ void loop()
 
           
           Serial.println("sensors updated ...going to sleep");
-          // 0.8.0_rc27 version of Argon does not have sleep or backup registers implemented.
-          // Replacing sleep with delay until both are implemented.
+          // 0.9.0 version of Argon does not have backup registers implemented.
+          // Replacing SLEEP_MODE_DEEP with STOP mode System.sleep().
           //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-          delay(wakeSeconds * 1000);
+          System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+
   }
 
 }
