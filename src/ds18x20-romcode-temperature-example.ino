@@ -572,6 +572,7 @@ void pauseSolarHeater() {
     solarHeaterPAUSE = true; // This should immediately break the while loop for the solarHeater
     //set_wake_time();
     //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+    System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
     //delay(wakeSeconds * 1000); // v0.8.0-rc.27 of DeviceOS does not have sleep functions enabled, so delay until appropriate wake time.
     //System.reset();
 }
