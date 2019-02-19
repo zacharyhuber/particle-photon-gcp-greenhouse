@@ -536,7 +536,10 @@ void transition_from_Solar_Heater_to_Battery_Recovery() {
 Timer SolarHeaterTimer(MAX_SolarHeater_ON_Time, transition_from_Solar_Heater_to_Battery_Recovery, true);
 
 
+bool debug_supercap_charger_Timer_is_running = false; // DEBUG the SupercapChargerTimer.isActive() keeps returning false while Timer is running
+
 void transition_from_Supercap_Charger_to_Solar_Heater() {
+    debug_supercap_charger_Timer_is_running = false;
     delay(1000); // if Battery Recovery was just called, the Solar Heater relay may not be done switching
     digitalWrite(relay2pin, LOW);
     delay(1000);
@@ -564,6 +567,7 @@ void pauseSolarHeater() {
     digitalWrite(relay2pin, LOW);
     digitalWrite(relay3pin, LOW);
     SupercapChargerTimer.dispose();
+    debug_supercap_charger_Timer_is_running = false;
     SolarHeaterTimer.dispose();
     BatteryRecoveryTimer.dispose();
     digitalWrite(vDividerOFFpin, HIGH);
@@ -694,12 +698,12 @@ void setup()
   // By default the initialization will use the largest range (32V, 2A).  However
   // you can call a setCalibration function to change this range (see comments in example .ino).
   ina219.begin();
-  if(ina219.getBusVoltage_V() == 0) // This isn't how this should work...
-  {
-      Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
-      Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
-  }
-  Particle.publish("INA219 connected. Reading supercapacitor: ", String::format("current(mA): %.2f / voltage: %.2f", ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
+  //if(ina219.getBusVoltage_V() == 0) // This isn't how this should work...
+  //{
+  //    Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
+  //    Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
+  //}
+  //Particle.publish("INA219 connected. Reading supercapacitor: ", String::format("current(mA): %.2f / voltage: %.2f", ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
   // ************************** MOVE TO BELOW pin SETUP *******************************************************
 
   //digitalWrite(relay0pin, LOW);
@@ -1172,6 +1176,7 @@ void loop()
           }
 
           while (solarHeaterON == true && solarHeaterPAUSE == false) {
+              //Particle.process();
               // ******** DEBUG CODE **********
               Particle.publish("debug YOU HAVE REACHED THE WHILE LOOP", PRIVATE, WITH_ACK);
               Particle.process();
@@ -1201,6 +1206,7 @@ void loop()
                   digitalWrite(relay3pin, LOW);
                   pause_for_Sensors_Timer.dispose();
                   SupercapChargerTimer.dispose();
+                  debug_supercap_charger_Timer_is_running = false;
                   SolarHeaterTimer.dispose();
                   BatteryRecoveryTimer.dispose();
                   //debugging publish, remove if this works:
@@ -1220,7 +1226,7 @@ void loop()
               }
 
               if (!SolarHeaterTimer.isActive() && !BatteryRecoveryTimer.isActive()) {
-                  if (!SupercapChargerTimer.isActive()) {
+                  if (debug_supercap_charger_Timer_is_running == false) { // DEBUG !SupercapChargerTimer.isActive() was not evaluating correctly
                       // ******** DEBUG CODE **********
                       Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
                       Particle.process();
@@ -1230,27 +1236,32 @@ void loop()
                       delay(1000);
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
+                      debug_supercap_charger_Timer_is_running = true;
                       delay(500); // avoid reading the peak current into supercapacitor with INA219
                       Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
+                      continue;
                   } else if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
                       digitalWrite(relay3pin, LOW);
                       SupercapChargerTimer.dispose();
+                      debug_supercap_charger_Timer_is_running = false;
                       delay(1000); // allow relay connection to break before connecting large load
                       SolarHeaterTimer.start();
                       digitalWrite(relay1pin, HIGH);
                       // turn on high power heater, connected to D7
-                      int priorReading12vBattery = analogRead(vDividerREADpin);
+                      //int priorReading12vBattery = analogRead(vDividerREADpin); // unused variable was throwing a makeError in compiler
+                      delay(500); // DEBUG the measured current in this publish was coming up as a very small negative
                       Particle.publish("Solar Heating Element STARTED. Supercapacitor current(mA)", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
-                      delay(1000);
+                      delay(3000);
                       // ****** END DEBUG CODE ********
+                      continue;
                       /********************************************* // Moved into else/if statement
                       if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) { // DEBUG need to figure out wiring of relays
                           digitalWrite(relay2pin, LOW);
@@ -1269,18 +1280,20 @@ void loop()
                           // ****** END DEBUG CODE ********
                       }
                       **********************************************/
-                  } else if (SupercapChargerTimer.isActive()) {
+                  } else if (debug_supercap_charger_Timer_is_running == true) { //DEBUG SupercapCharger.isActive() not evaluating correctly
                       // ******** DEBUG CODE **********
                       Particle.publish("debug SupercapCharger.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
+                      continue;
                   } else {
                       // ******** DEBUG CODE **********
                       Particle.publish("debug ERROR in Supercapacitor Charger Timer loop", PRIVATE, WITH_ACK);
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
+                      continue;
                   }
                   /******** DEBUG REMOVE AND PLACE IN ! (NOT) conditional *********
                   if (SupercapChargerTimer.isActive()) {
@@ -1329,6 +1342,7 @@ void loop()
                       delay(1000);
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
+                      debug_supercap_charger_Timer_is_running = true;
                       delay(500); // avoid reading the peak current into supercapacitor with INA219
                       Particle.publish("Supercapacitor Charger ON. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
@@ -1363,9 +1377,9 @@ void loop()
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
-                  } else if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+                  } else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -200) {
                       // ******** DEBUG CODE **********
-                      Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", PRIVATE, WITH_ACK);
+                      Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
@@ -1374,7 +1388,7 @@ void loop()
                       SolarHeaterTimer.dispose();
                       delay(1000);
                       // ******** DEBUG CODE **********
-                      Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
+                      Particle.publish("debug ATTEMPTING TO RESTART SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
                       Particle.process();
                       delay(5000);
                       // ****** END DEBUG CODE ********
@@ -1382,6 +1396,7 @@ void loop()
                       delay(1000);
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
+                      debug_supercap_charger_Timer_is_running = true;
                       delay(500); // avoid reading the peak current into supercapacitor with INA219
                       Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
