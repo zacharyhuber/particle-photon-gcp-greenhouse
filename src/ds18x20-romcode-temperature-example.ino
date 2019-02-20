@@ -504,7 +504,9 @@ Timer testingLowLightTimer(300000, test_of_Low_Light_Level, true);
 
 bool reset_BatteryRecoveryTimer = false;
 
+bool debug_battery_recovery_Timer_is_running = false;
 void transition_from_Battery_Recovery_out() {
+    debug_battery_recovery_Timer_is_running = false;
     int highestReading12vBattery = analogRead(vDividerREADpin);
     //if (highestReading12vBattery < 3400) {
     if (highestReading12vBattery < 2650) { // <13.0v with diode-skewed GND
@@ -519,7 +521,9 @@ void transition_from_Battery_Recovery_out() {
 Timer BatteryRecoveryTimer(Battery12v_Recovery_Period, transition_from_Battery_Recovery_out, true);
 
 
+bool debug_solar_heater_Timer_is_running = false; // DEBUG SolarHeaterTimer.isActive() keeps returning false while Timer is running
 void transition_from_Solar_Heater_to_Battery_Recovery() {
+    debug_solar_heater_Timer_is_running = false;
     digitalWrite(relay1pin, LOW);
     delay(100);
     int lowestReading12vBattery = analogRead(vDividerREADpin);
@@ -532,12 +536,12 @@ void transition_from_Solar_Heater_to_Battery_Recovery() {
         // ****** END DEBUG CODE ********
     }
     BatteryRecoveryTimer.start();
+    debug_battery_recovery_Timer_is_running = true;
 }
 Timer SolarHeaterTimer(MAX_SolarHeater_ON_Time, transition_from_Solar_Heater_to_Battery_Recovery, true);
 
 
 bool debug_supercap_charger_Timer_is_running = false; // DEBUG the SupercapChargerTimer.isActive() keeps returning false while Timer is running
-
 void transition_from_Supercap_Charger_to_Solar_Heater() {
     debug_supercap_charger_Timer_is_running = false;
     delay(1000); // if Battery Recovery was just called, the Solar Heater relay may not be done switching
@@ -547,6 +551,7 @@ void transition_from_Supercap_Charger_to_Solar_Heater() {
     delay(1000); // DEBUG DELAY TO TROUBLESHOOT HARD FAULTS ON ARGON
     delay(100); // let relay connections break before connecting high current load
     SolarHeaterTimer.start();
+    debug_solar_heater_Timer_is_running = true;
     digitalWrite(relay1pin, HIGH);
     // turn on high power heater, connected to D7
     int priorReading12vBattery = analogRead(vDividerREADpin);
@@ -560,7 +565,6 @@ Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Ch
 
 
 bool solarHeaterPAUSE = false;
-
 // call this Timer with pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000)
 void pauseSolarHeater() {
     digitalWrite(relay1pin, LOW);
@@ -569,7 +573,9 @@ void pauseSolarHeater() {
     SupercapChargerTimer.dispose();
     debug_supercap_charger_Timer_is_running = false;
     SolarHeaterTimer.dispose();
+    debug_solar_heater_Timer_is_running = false;
     BatteryRecoveryTimer.dispose();
+    debug_battery_recovery_Timer_is_running = false;
     digitalWrite(vDividerOFFpin, HIGH);
     delay(200);
     digitalWrite(vDividerOFFpin, LOW);
@@ -1208,7 +1214,9 @@ void loop()
                   SupercapChargerTimer.dispose();
                   debug_supercap_charger_Timer_is_running = false;
                   SolarHeaterTimer.dispose();
+                  debug_solar_heater_Timer_is_running = false;
                   BatteryRecoveryTimer.dispose();
+                  debug_battery_recovery_Timer_is_running = false;
                   //debugging publish, remove if this works:
                   Particle.publish("Very low battery under load from Solar Heater", PRIVATE, WITH_ACK);
                   // ******** DEBUG CODE **********
@@ -1223,9 +1231,10 @@ void loop()
               if (reset_BatteryRecoveryTimer == true) {
                   reset_BatteryRecoveryTimer = false;
                   BatteryRecoveryTimer.reset();
+                  debug_battery_recovery_Timer_is_running = true;
               }
 
-              if (!SolarHeaterTimer.isActive() && !BatteryRecoveryTimer.isActive()) {
+              if (debug_solar_heater_Timer_is_running == false && debug_battery_recovery_Timer_is_running == false) { // DEBUG !SolarHeaterTimer.isActive() and !BatteryRecoveryTimer.isActive() were not evaluating correctly
                   if (debug_supercap_charger_Timer_is_running == false) { // DEBUG !SupercapChargerTimer.isActive() was not evaluating correctly
                       // ******** DEBUG CODE **********
                       Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
@@ -1252,6 +1261,7 @@ void loop()
                       debug_supercap_charger_Timer_is_running = false;
                       delay(1000); // allow relay connection to break before connecting large load
                       SolarHeaterTimer.start();
+                      debug_solar_heater_Timer_is_running = true;
                       digitalWrite(relay1pin, HIGH);
                       // turn on high power heater, connected to D7
                       //int priorReading12vBattery = analogRead(vDividerREADpin); // unused variable was throwing a makeError in compiler
@@ -1333,11 +1343,12 @@ void loop()
                   ********END DEBUG REMOVAL**********/
               }
 
-              if (BatteryRecoveryTimer.isActive()) {
+              if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
                   if (currentReading12vBattery > 3050) { // ???>13.4v??? with diode-skewed GND
                       delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                       BatteryRecoveryTimer.dispose();
+                      debug_battery_recovery_Timer_is_running = false;
                       digitalWrite(relay3pin, HIGH);
                       delay(1000);
                       digitalWrite(relay2pin, HIGH);
@@ -1352,11 +1363,12 @@ void loop()
                   }
               }
 
-              if (SolarHeaterTimer.isActive()) {
+              if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
                   //if (currentReading12vBattery < 3350) { // ~12.5v
                   if (currentReading12vBattery < 2450) { // ???~12.5v??? with diode-skewed GND
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
+                      debug_solar_heater_Timer_is_running = false;
                       delay(100);
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       //if (lowestReading12vBattery < 3250) { // ~12.2v
@@ -1372,6 +1384,7 @@ void loop()
                           // this break uses the system.sleep below this while loop
                       }
                       BatteryRecoveryTimer.start();
+                      debug_battery_recovery_Timer_is_running = true;
                       Particle.publish("Battery Recovery STARTED. Supercapacitor Voltage:", String(ina219.getBusVoltage_V()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
@@ -1386,6 +1399,7 @@ void loop()
                       //delay(1000); // if relays just switched they may not have demagnetized yet
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
+                      debug_solar_heater_Timer_is_running = false;
                       delay(1000);
                       // ******** DEBUG CODE **********
                       Particle.publish("debug ATTEMPTING TO RESTART SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
