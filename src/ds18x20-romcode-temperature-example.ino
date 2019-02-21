@@ -34,7 +34,24 @@ void loop() {
 // AWDT count reset automatically after loop() ends
 */
     //=========================================================================
-    /********* FEATURE NOT PRESENT IN 0.8.0_rc27 for Argon!!! *****************
+    /********* Retained variables are not available on the Argon *****************
+     * ***** HOWEVER, the simulated EEPROM should work just fine: ****************
+     * // EXAMPLE USAGE
+        // Write a value (2 bytes in this case) to the EEPROM address
+        int addr = 10;
+        uint16_t value = 12345;
+        EEPROM.put(addr, value);
+
+        // Write an object to the EEPROM address
+        addr = 20;
+        struct MyObject {
+          uint8_t version;
+          float field1;
+          uint16_t field2;
+          char name[10];
+        };
+        MyObject myObj = { 0, 12.34f, 25, "Test!" };
+        EEPROM.put(addr, myObj);
 
 // This enables retained variables in the Backup RAM (SRAM) 
 STARTUP(System.enableFeature(FEATURE_RETAINED_MEMORY));
