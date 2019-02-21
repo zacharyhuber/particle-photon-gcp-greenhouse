@@ -5,7 +5,7 @@
  * Date: Feb 21, 2019
  */
 // Product ID and Version for Particle Product firmware deployment
-//PRODUCT_ID(????); // Argon version
+//PRODUCT_ID(????); // Argon version using DeviceOS v0.9.0
 //PRODUCT_VERSION(1);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
@@ -273,7 +273,7 @@ bool ONEWIRE_sensors_finished = false;
 //const int PublishFrequency = 1200000; // gcp upload frequency
 //unsigned long LastPublish = 20000;
 
-char googleString[255]; // sensor_data_toGCP JSON string, 255 bytes max for Particle.publish data object (400+ bytes after DeviceOS v0.8.0)
+char googleString[255]; // sensor_data_toGCP JSON string, 255 bytes max for Particle.publish data object (622 bytes after DeviceOS v0.8.0)
     //=========================================================================
 
 // Variable Declarations
@@ -579,7 +579,6 @@ void pauseSolarHeater() {
     //set_wake_time();
     //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
     //System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
-    //delay(wakeSeconds * 1000); // v0.8.0-rc.27 of DeviceOS does not have sleep functions enabled, so delay until appropriate wake time.
     //System.reset();
 }
 // Call this timer with the following function to replace the System.sleep period with a SolarHeater period
@@ -652,7 +651,8 @@ void turnOFFsolarHeater(void)
 void retry_publish(void) 
 {
         set_wake_time();
-        System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        //~electron code~System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        System.sleep(D8, RISING, (wakeSeconds / 3));
         
         Serial.print("attempting to resend sensor_data_toGCP");
         if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
@@ -661,7 +661,8 @@ void retry_publish(void)
         }
         Serial.print("...retry #1 failed");
 
-        System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        //~electron code~System.sleep(A7, RISING, (wakeSeconds / 3), SLEEP_NETWORK_STANDBY);
+        System.sleep(D8, RISING, (wakeSeconds / 3));
 
         Serial.print("...last attempt to resend sensor_data_toGCP");
         
@@ -1073,12 +1074,10 @@ void loop()
                delay(3000);
                //System.sleep(SLEEP_MODE_DEEP, 3600000);
                System.sleep(D8, RISING, 3600000); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
-               //delay(3600000); // System.sleep is skipped in 0.8.0_rc27 Argon
                System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
            }
             //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
             System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
-            //delay(wakeSeconds * 1000); // System.sleep is skipped in 0.8.0_rc27 Argon
             System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
@@ -1086,7 +1085,6 @@ void loop()
             set_wake_time();
             //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
             System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
-            //delay(wakeSeconds * 1000); // System.sleep is skipped in 0.8.0_rc27 Argon
             System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     }
     
@@ -1483,14 +1481,15 @@ void loop()
           solarHeaterPAUSE = false;
 
           // all retained variables should have been updated so go to SLEEP_MODE_DEEP until next measurement
-          // BUT NOT ON THE ARGON 0.8.0_rc27!!!!!!!!!!!!!!!!!!
+          // BUT NOT ON THE ARGON (unless EEPROM storage of variables is implemented)
           set_wake_time();
 
           
           Serial.println("sensors updated ...going to sleep");
-          // 0.9.0 version of Argon does not have backup registers implemented.
+          // 0.9.0 version of Argon DeviceOS does not have backup registers implemented, but:
+          //    EEPROM could be used to store variables during STANDBY mode (deep sleep mode) but there is no way to wake up the device at a fixed time.
           // Replacing SLEEP_MODE_DEEP with STOP mode System.sleep().
-          //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
+          //~electron code~System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
           System.sleep(D8, RISING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
 
   }
