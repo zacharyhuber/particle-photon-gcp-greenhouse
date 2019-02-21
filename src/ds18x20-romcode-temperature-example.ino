@@ -2,7 +2,7 @@
  * Project photon-gcp-greenhouse
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
- * Date: Jan 15, 2019
+ * Date: Feb 21, 2019
  */
 // Product ID and Version for Particle Product firmware deployment
 //PRODUCT_ID(8620); // Electron version
@@ -429,7 +429,7 @@ void initialize_solar_heater_relays() {
 }
 
 #define Time_for_SolarHeater_ON 16 //10:00 AM CST (4:00 PM UTC)
-#define Time_for_SolarHeater_OFF 22 //3:00 PM CST (9:00 PM UTC) //DEBUG CHANGE BACK TO "21" IMMEDIATELY
+#define Time_for_SolarHeater_OFF 21 //3:00 PM CST (9:00 PM UTC)
 #define MAX_SolarHeater_ON_Time 240000 // in millis
 #define Supercap_Charging_Period 30000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
@@ -442,28 +442,20 @@ bool solarHeaterON = false;
 void test_of_Solar_Charger() {
     //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
     if (analogRead(vDividerREADpin) > 2700) { // ~13.0v with diode-skewed GND // DEBUG switched vDividerON earlier in flow
-        // ******** DEBUG CODE **********
-        //Particle.publish("debug test_of_Solar_Charger callback function starting...", PRIVATE, WITH_ACK);
-        //Particle.process();
-        //delay(4000);
-        // ****** END DEBUG CODE ********
+
         testingSolarCharger = false;
         solarHeaterON = true;
         
         //digitalWrite(vDividerONpin, HIGH); // DEBUG moved to earlier in flow
         //delay(200); // DEBUG moved to earlier in flow
         //digitalWrite(vDividerONpin, LOW); // DEBUG moved to earlier in flow
-        //Particle.publish("Solar Heater ON", PRIVATE, WITH_ACK);
-        // ******** DEBUG CODE **********
-        //Particle.process();
-        //delay(4000);
-        // ****** END DEBUG CODE ********
-        // ***DEBUG FOUND THE PROBLEM?*** Serial.println("Solar Heater ON");
+
+        // Serial.println("Solar Heater ON"); // ***DEBUG Serial and Particle.publish calls will crash the application code in Timer callback functions*** 
         
     } else {
         Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
-        Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
-        delay(4000); // DEBUG
+        //Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
+        //delay(4000); // DEBUG
         digitalWrite(vDividerOFFpin, HIGH);
         delay(200);
         digitalWrite(vDividerOFFpin, LOW);
@@ -504,17 +496,13 @@ Timer testingLowLightTimer(300000, test_of_Low_Light_Level, true);
 
 bool reset_BatteryRecoveryTimer = false;
 
-bool debug_battery_recovery_Timer_is_running = false;
+bool debug_battery_recovery_Timer_is_running = false; // DEBUG BatteryRecoveryTimer.isActive() keeps returning false while Timer is running
 void transition_from_Battery_Recovery_out() {
     debug_battery_recovery_Timer_is_running = false;
     int highestReading12vBattery = analogRead(vDividerREADpin);
     //if (highestReading12vBattery < 3400) {
     if (highestReading12vBattery < 2650) { // <13.0v with diode-skewed GND
         Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE, WITH_ACK);
-        // ******** DEBUG CODE **********
-        Particle.process();
-        delay(1000);
-        // ****** END DEBUG CODE ********
         reset_BatteryRecoveryTimer = true;
     }
 }
@@ -528,12 +516,8 @@ void transition_from_Solar_Heater_to_Battery_Recovery() {
     delay(100);
     int lowestReading12vBattery = analogRead(vDividerREADpin);
     //if (lowestReading12vBattery < 3250) {
-    if (lowestReading12vBattery < 2400) { // ??? 11.5v ??? with diode-skewed GND
+    if (lowestReading12vBattery < 2350) { // ??? 11.5v ??? with diode-skewed GND
         Particle.publish("12v battery voltage very low under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
-        // ******** DEBUG CODE **********
-        Particle.process();
-        delay(1000);
-        // ****** END DEBUG CODE ********
     }
     BatteryRecoveryTimer.start();
     debug_battery_recovery_Timer_is_running = true;
@@ -548,18 +532,13 @@ void transition_from_Supercap_Charger_to_Solar_Heater() {
     digitalWrite(relay2pin, LOW);
     delay(1000);
     digitalWrite(relay3pin, LOW);
-    delay(1000); // DEBUG DELAY TO TROUBLESHOOT HARD FAULTS ON ARGON
-    delay(100); // let relay connections break before connecting high current load
+    delay(200); // let relay connections break before connecting high current load
     SolarHeaterTimer.start();
     debug_solar_heater_Timer_is_running = true;
     digitalWrite(relay1pin, HIGH);
     // turn on high power heater, connected to D7
     int priorReading12vBattery = analogRead(vDividerREADpin);
     Particle.publish("Supercapacitor Charging timed out.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), priorReading12vBattery), PRIVATE);
-    // ******** DEBUG CODE **********
-    Particle.process();
-    delay(1000);
-    // ****** END DEBUG CODE ********
 }
 Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Charger_to_Solar_Heater, true);
 
@@ -628,11 +607,7 @@ void turnOFFsolarHeater(void)
         digitalWrite(vDividerOFFpin, HIGH);
         delay(200);
         digitalWrite(vDividerOFFpin, LOW);
-        Particle.publish("Solar Heater OFF to charge battery for the night", PRIVATE, NO_ACK);
-        // ******** DEBUG CODE **********
-        Particle.process();
-        delay(1000);
-        // ****** END DEBUG CODE ********
+        Particle.publish("Solar Heater OFF to charge battery for the night", PRIVATE, WITH_ACK);
         Serial.println("Solar Heater OFF to charge battery for the night");
     }
     if (!testingLowLightTimer.isActive()) {
@@ -1147,8 +1122,8 @@ void loop()
               delay(1000); // DEBUG rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
               turnONsolarHeater();
               Particle.publish("debug turnONsolarHeater", PRIVATE);
-              delay(4000);
-          } else if (lux == 0) {
+              delay(4000); // DEBUG rest period to make sure any .publish calls from turn ON process go through
+          } else if (lux == 0.00) {
               Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
           }
           //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ~12.0v
@@ -1158,11 +1133,6 @@ void loop()
 
           if (testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
               // THIS MIGHT BE BETTER AS A SERIES OF FOR LOOPS TO LIMIT THE CHANCE FOR BLOCKING
-              // ******** DEBUG CODE **********
-              Particle.publish("debug Looping Particle.process() while testing Timers are active", PRIVATE);
-              Particle.process();
-              delay(1000);
-              // ****** END DEBUG CODE ********
               while (testingSolarTimer.isActive()) {
                   // ******** DEBUG CODE **********
                   delay(1000);
@@ -1178,20 +1148,23 @@ void loop()
               while (testingLowBatteryTimer.isActive()) {
                   Particle.process();
               }
-              delay(1000); // DEBUG
           }
 
           while (solarHeaterON == true && solarHeaterPAUSE == false) {
               //Particle.process();
-              // ******** DEBUG CODE **********
+              /******** DEBUG CODE **********
               Particle.publish("debug YOU HAVE REACHED THE WHILE LOOP", PRIVATE, WITH_ACK);
               Particle.process();
               delay(5000);
-              // ****** END DEBUG CODE ********
+              // ****** END DEBUG CODE ********/
               if (!pause_for_Sensors_Timer.isActive()) {
                   set_wake_time();
                   if (wakeSeconds < 60) {
                       Particle.publish("Not enough time to start Solar Heating Period, going to sleep", PRIVATE, WITH_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
                       break;
                   }
                   pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000);
@@ -1239,14 +1212,14 @@ void loop()
                       // ******** DEBUG CODE **********
                       Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
                       Particle.process();
-                      delay(5000);
+                      delay(4000);
                       // ****** END DEBUG CODE ********
                       digitalWrite(relay3pin, HIGH);
                       delay(1000);
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
                       debug_supercap_charger_Timer_is_running = true;
-                      delay(500); // avoid reading the peak current into supercapacitor with INA219
+                      delay(200); // avoid reading the peak current into supercapacitor with INA219
                       Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
@@ -1265,7 +1238,6 @@ void loop()
                       digitalWrite(relay1pin, HIGH);
                       // turn on high power heater, connected to D7
                       //int priorReading12vBattery = analogRead(vDividerREADpin); // unused variable was throwing a makeError in compiler
-                      delay(500); // DEBUG the measured current in this publish was coming up as a very small negative
                       Particle.publish("Solar Heating Element STARTED. Supercapacitor current(mA)", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
@@ -1354,7 +1326,7 @@ void loop()
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
                       debug_supercap_charger_Timer_is_running = true;
-                      delay(500); // avoid reading the peak current into supercapacitor with INA219
+                      delay(200); // avoid reading the peak current into supercapacitor with INA219
                       Particle.publish("Supercapacitor Charger ON. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
@@ -1401,23 +1373,24 @@ void loop()
                       SolarHeaterTimer.dispose();
                       debug_solar_heater_Timer_is_running = false;
                       delay(1000);
-                      // ******** DEBUG CODE **********
-                      Particle.publish("debug ATTEMPTING TO RESTART SUPERCAPACITOR CHARGER", PRIVATE, WITH_ACK);
-                      Particle.process();
-                      delay(5000);
-                      // ****** END DEBUG CODE ********
                       digitalWrite(relay3pin, HIGH);
                       delay(1000);
                       digitalWrite(relay2pin, HIGH);
                       SupercapChargerTimer.start();
                       debug_supercap_charger_Timer_is_running = true;
-                      delay(500); // avoid reading the peak current into supercapacitor with INA219
+                      delay(200); // avoid reading the peak current into supercapacitor with INA219
                       Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
 
+                  } else {
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug SolarHeater.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, WITH_ACK);
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
                   }
               }
               
