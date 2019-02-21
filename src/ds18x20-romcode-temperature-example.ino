@@ -1,12 +1,12 @@
 /*
- * Project photon-gcp-greenhouse
+ * Project particle-gcp-greenhouse
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
- * Date: Jan 15, 2019
+ * Date: Feb 21, 2019
  */
 // Product ID and Version for Particle Product firmware deployment
-//PRODUCT_ID(8620); // Electron version
-//PRODUCT_VERSION(24);
+//PRODUCT_ID(????); // Argon version
+//PRODUCT_VERSION(1);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
