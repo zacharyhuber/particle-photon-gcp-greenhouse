@@ -406,7 +406,7 @@ void set_wake_time(void)
 
 int read12vBatteryVoltage(void)
 {
-    //pinMode(vDividerONpin, OUTPUT); // moved to setup()
+    //pinMode(vDividerONpin, OUTPUT); // moved to STARTUP()
     //pinMode(vDividerOFFpin, OUTPUT);
     //pinMode(vDividerREADpin, INPUT);
     digitalWrite(vDividerONpin, HIGH);
@@ -447,6 +447,12 @@ void initialize_solar_heater_relays() {
     digitalWrite(relay1pin, LOW);
     digitalWrite(relay2pin, LOW);
     digitalWrite(relay3pin, LOW);
+
+    pinMode(vDividerONpin, OUTPUT);
+    pinMode(vDividerOFFpin, OUTPUT);
+
+    digitalWrite(vDividerONpin, LOW);
+    digitalWrite(vDividerOFFpin, LOW);
 }
 
 #define Time_for_SolarHeater_ON 16 //10:00 AM CST (4:00 PM UTC)
@@ -693,8 +699,8 @@ void setup()
   //pinMode(relay2pin, OUTPUT);
   //pinMode(relay3pin, OUTPUT); //MOVED TO STARTUP() FUNCTION
 
-  pinMode(vDividerONpin, OUTPUT);
-  pinMode(vDividerOFFpin, OUTPUT);
+  //pinMode(vDividerONpin, OUTPUT);
+  //pinMode(vDividerOFFpin, OUTPUT); // MOVED TO STARTUP() FUNCTION
   pinMode(vDividerREADpin, INPUT);
 
   // ****** PLACED INA219 ~.publish HERE TO CHECK WHAT IS GOING ON WITH RELAYS TRIGGERING PRIOR TO setup() ****
