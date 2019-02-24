@@ -5,7 +5,8 @@
         "files.associations": {
             "*.ino": "cpp"
         },
-        "particle.targetPlatform": "argon"
+        "particle.targetPlatform": "argon",
+        "cortex-debug.openocdPath": "/Users/JENCUFF/.particle/toolchains/openocd/0.10.0-particle.1/bin/openocd"
     },
     "folders": [
         {
