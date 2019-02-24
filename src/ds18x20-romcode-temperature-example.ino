@@ -36,6 +36,10 @@ void loop() {
     //=========================================================================
     /********* Retained variables are not available on the Argon *****************
      * ***** HOWEVER, the simulated EEPROM should work just fine: ****************
+     * a double variable is 8 bytes
+     * a float variable is 4 bytes
+     * a bool variable is 1 byte
+     * uint32_t variable is 4 bytes
      * // EXAMPLE USAGE
         // Write a value (2 bytes in this case) to the EEPROM address
         int addr = 10;
