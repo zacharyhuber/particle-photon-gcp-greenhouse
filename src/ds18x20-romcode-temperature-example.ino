@@ -749,7 +749,7 @@ void setup()
   if(!hdc.begin())
   {
       Serial.print("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
-      //~photon code~Particle.publish("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
+      Particle.publish("No HDC1000 detected ...  Check your wiring or I2C ADDR!", PRIVATE);
   }
   delay(15);    // let the chip initialize
 
@@ -1088,6 +1088,9 @@ void loop()
            }
             //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
             System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+            waitUntil(Particle.connected);
+            Particle.publish("waking up from sleep... system resetting", PRIVATE, WITH_ACK);
+            delay(4000); //debug This .publish isn't working
             System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
