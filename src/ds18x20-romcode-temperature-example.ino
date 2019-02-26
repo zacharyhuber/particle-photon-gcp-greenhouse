@@ -713,7 +713,7 @@ void setup()
       Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
       Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
   }
-  Particle.publish("INA219 connected. Reading supercapacitor: ", String::format("current(mA): %.2f / voltage: %.2f", ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
+  Particle.publish("INA219 connected. Reading supercapacitor: ", String::format("current(mA): %.2f / voltage: %.2f", ina219.getCurrent_mA(), ina219.getBusVoltage_V()), PRIVATE);
   // ************************** MOVE TO BELOW pin SETUP *******************************************************
 
   //digitalWrite(relay0pin, LOW);
