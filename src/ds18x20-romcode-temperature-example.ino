@@ -456,7 +456,7 @@ void initialize_solar_heater_relays() {
 }
 
 #define Time_for_SolarHeater_ON 16 //10:00 AM CST (4:00 PM UTC)
-#define Time_for_SolarHeater_OFF 22 //3:00 PM CST (9:00 PM UTC) //DEBUG CHANGE BACK TO "21" IMMEDIATELY
+#define Time_for_SolarHeater_OFF 24 //3:00 PM CST (9:00 PM UTC) //DEBUG CHANGE BACK TO "21" IMMEDIATELY
 #define MAX_SolarHeater_ON_Time 240000 // in millis
 #define Supercap_Charging_Period 30000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
@@ -708,11 +708,11 @@ void setup()
   // By default the initialization will use the largest range (32V, 2A).  However
   // you can call a setCalibration function to change this range (see comments in example .ino).
   ina219.begin();
-  //if(ina219.getBusVoltage_V() == 0) // This isn't how this should work...
-  //{
-  //    Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
-  //    Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
-  //}
+  if(ina219.getCurrent_mA() == -0.10) // This isn't how this should work...
+  {
+      Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
+      Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
+  }
   //Particle.publish("INA219 connected. Reading supercapacitor: ", String::format("current(mA): %.2f / voltage: %.2f", ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
   // ************************** MOVE TO BELOW pin SETUP *******************************************************
 
@@ -1090,7 +1090,7 @@ void loop()
             System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
             waitUntil(Particle.connected);
             Particle.publish("waking up from sleep... system resetting", PRIVATE, WITH_ACK);
-            delay(4000); //debug This .publish isn't working
+            delay(4000); //debug This .publish isn't working.
             System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     } else {
             Particle.publish("Error sending sensor_data to GCP", NULL, 120, PRIVATE, NO_ACK);
