@@ -713,7 +713,7 @@ void setup()
       Serial.print("No INA219 detected ... Check your wiring or I2C ADDR!");
       Particle.publish("Ooops, no INA219 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
   }
-  //Particle.publish("INA219 connected. Reading supercapacitor: ", String::format("current(mA): %.2f / voltage: %.2f", ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
+  Particle.publish("INA219 connected. Reading supercapacitor: ", String::format("current(mA): %.2f / voltage: %.2f", ina219.getCurrent_mA(), ina219.getBusVoltage_V()));
   // ************************** MOVE TO BELOW pin SETUP *******************************************************
 
   //digitalWrite(relay0pin, LOW);
@@ -1083,7 +1083,7 @@ void loop()
                Particle.process();
                delay(3000);
                //System.sleep(SLEEP_MODE_DEEP, 3600000);
-               System.sleep(D8, FALLING, 3600000); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+               System.sleep(D8, FALLING, 3600); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
                System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
            }
             //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
