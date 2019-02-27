@@ -709,7 +709,7 @@ void setup()
   // Register event handler to detect OTA firmware update and prevent the device from sleeping.
   pinMode(D7, OUTPUT); // debug LED not strictly necessary
   digitalWrite(D7, LOW); // LED set HIGH prior to OTA update
-  //System.disableUpdates();
+  System.disableUpdates();
   System.on(firmware_update_pending, otaHandler);
   System.on(firmware_update, otaCurrent);
 
@@ -787,7 +787,7 @@ void loop()
   int currentTens_place = (Time.minute() / 10);
 
   //if (currentTens_place == 5) {
-  if (Time.hour() == 9 /*&& currentTens_place == 5*/) {
+  if (Time.hour() == 9 && currentTens_place == 5) {
       Particle.connect();
       waitUntil(Particle.connected);
       Particle.process();
@@ -798,7 +798,8 @@ void loop()
   //delay(5000); // 5 second pause provides window to manually begin a OTA flash remotely.
   // Particle Product automatic OTA firmware updates can be interrupted by application code.
   // The following should completely block application code while allowing the system code to run, while OTA updates are available.
-  if (OTA_update_timer.isActive()) {
+  if (OTA_update_incoming_DO_NOT_SLEEP == true) {
+  //if (OTA_update_timer.isActive()) { // Timer.isActive() is slow to respond.
     Particle.process();
     return;
   }
