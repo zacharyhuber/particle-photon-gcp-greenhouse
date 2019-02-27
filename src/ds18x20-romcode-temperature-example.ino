@@ -3,10 +3,11 @@
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
  * Date: Feb 21, 2019
+ * Version: 0.2.0
  */
 // Product ID and Version for Particle Product firmware deployment
-//PRODUCT_ID(????); // Argon version using DeviceOS v0.9.0
-//PRODUCT_VERSION(1);
+PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
+PRODUCT_VERSION(1);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
