@@ -475,7 +475,7 @@ void initialize_solar_heater_relays() {
 }
 
 #define Time_for_SolarHeater_ON 16 //10:00 AM CST (4:00 PM UTC)
-#define Time_for_SolarHeater_OFF 24 //3:00 PM CST (9:00 PM UTC) //DEBUG CHANGE BACK TO "21" IMMEDIATELY
+#define Time_for_SolarHeater_OFF 22 //3:00 PM CST (9:00 PM UTC) //DEBUG CHANGE BACK TO "21" IMMEDIATELY
 #define MAX_SolarHeater_ON_Time 240000 // in millis
 #define Supercap_Charging_Period 30000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
@@ -1537,6 +1537,13 @@ void loop()
               Particle.process();
               //digitalWrite(relay3pin, HIGH);
               //digitalWrite(relay2pin), HIGH);
+          }
+          if (solarHeaterPAUSE == true) {
+              Particle.publish("Solar Heater PAUSED for Sensor Reading", String(ina219.getBusVoltage_V()), PRIVATE);
+              // DEBUG CODE
+              Particle.process();
+              delay(1000);
+              // END DEBUG CODE
           }
           solarHeaterPAUSE = false;
 
