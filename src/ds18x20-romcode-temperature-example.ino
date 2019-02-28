@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(3);
+PRODUCT_VERSION(4);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -1111,6 +1111,10 @@ void loop()
             Serial.flush();
             OTA_update_timer.start(); // This SHOULD be the last thing the application code does before it stops for the OTA update.
             Particle.process();
+            while (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
+                delay(10000);
+                Particle.publish("debug OTA updating firmware", PRIVATE);  // This will probably not be published.  That would be good.
+            }
             return;
         }
     }
