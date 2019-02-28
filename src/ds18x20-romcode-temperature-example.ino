@@ -3,7 +3,7 @@
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
  * Date: Feb 21, 2019
- * Version: 0.2.0
+ * Version: 0.2.1
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
