@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(5);
+PRODUCT_VERSION(6);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -475,7 +475,7 @@ void initialize_solar_heater_relays() {
 }
 
 #define Time_for_SolarHeater_ON 16 //10:00 AM CST (4:00 PM UTC)
-#define Time_for_SolarHeater_OFF 22 //3:00 PM CST (9:00 PM UTC) //DEBUG CHANGE BACK TO "21" IMMEDIATELY
+#define Time_for_SolarHeater_OFF 21 //3:00 PM CST (9:00 PM UTC)
 #define MAX_SolarHeater_ON_Time 240000 // in millis
 #define Supercap_Charging_Period 30000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
@@ -487,14 +487,14 @@ bool solarHeaterON = false;
 
 void test_of_Solar_Charger() {
     //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
-    if (analogRead(vDividerREADpin) > 2700) { // ~13.0v with diode-skewed GND // DEBUG switched vDividerON earlier in flow
+    if (analogRead(vDividerREADpin) > 2700) { // ~13.0v with diode-skewed GND
 
         testingSolarCharger = false;
         solarHeaterON = true;
         
-        //digitalWrite(vDividerONpin, HIGH); // DEBUG moved to earlier in flow
-        //delay(200); // DEBUG moved to earlier in flow
-        //digitalWrite(vDividerONpin, LOW); // DEBUG moved to earlier in flow
+        //digitalWrite(vDividerONpin, HIGH); // moved to earlier in flow
+        //delay(200); // moved to earlier in flow
+        //digitalWrite(vDividerONpin, LOW); // moved to earlier in flow
 
         // Serial.println("Solar Heater ON"); // ***DEBUG Serial and Particle.publish calls will crash the application code in Timer callback functions*** 
         
@@ -640,7 +640,7 @@ void turnONsolarHeater(void)
         }
 
     } else {
-        Particle.publish("turnOnsolarHeater conditions not met", PRIVATE); //debug
+        Particle.publish("turnONsolarHeater conditions not met", PRIVATE);
         // do anything that should be done while solarHeater is ON. (like provide a reason for no activation)
     }
 
@@ -1141,6 +1141,7 @@ void loop()
             System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
             waitUntil(Particle.connected);
             Particle.publish("waking up from sleep... system resetting", PRIVATE, WITH_ACK);
+            Particle.process();
             delay(4000); //debug This .publish isn't working.
             System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     } else {
@@ -1202,7 +1203,7 @@ void loop()
           
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
           if (batteryReading12v > 2700 && lux > 1000) { // ~13.0v with diode-skewed GND
-              delay(1000); // DEBUG rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
+              delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
               turnONsolarHeater();
               Particle.publish("debug turnONsolarHeater", PRIVATE);
               delay(4000); // DEBUG rest period to make sure any .publish calls from turn ON process go through
@@ -1260,7 +1261,7 @@ void loop()
 
               int currentReading12vBattery = analogRead(vDividerREADpin);
               //if (currentReading12vBattery < 3200) { // ~12.0v
-              if (currentReading12vBattery < 2200) { // ??? 11.5v ??? with diode-skewed GND // DEBUG this shouldn't have triggered...
+              if (currentReading12vBattery < 2100) { // ??? 11.5v ??? with diode-skewed GND // DEBUG this shouldn't have triggered...
                   digitalWrite(relay1pin, LOW);
                   delay(500);
                   digitalWrite(relay2pin, LOW);
@@ -1348,7 +1349,7 @@ void loop()
                   } else if (debug_supercap_charger_Timer_is_running == true) { //DEBUG SupercapCharger.isActive() not evaluating correctly
                       // ******** DEBUG CODE **********
                       Particle.publish("debug SupercapCharger.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
-                      Particle.process();
+                      //Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
