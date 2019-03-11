@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(6);
+PRODUCT_VERSION(7);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -1421,14 +1421,14 @@ void loop()
 
               if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
                   //if (currentReading12vBattery < 3350) { // ~12.5v
-                  if (currentReading12vBattery < 2450) { // ???~12.5v??? with diode-skewed GND
+                  if (currentReading12vBattery < 2350) { // ???~12.2v??? with diode-skewed GND
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
                       debug_solar_heater_Timer_is_running = false;
                       delay(100);
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       //if (lowestReading12vBattery < 3250) { // ~12.2v
-                      if (lowestReading12vBattery < 2350) { // ???~12.2v??? with diode-skewed GND
+                      if (lowestReading12vBattery < 2250) { // ???~12.1v??? with diode-skewed GND
                           //debugging publish, remove if this works:
                           Particle.publish("Low battery under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
                           // ******** DEBUG CODE **********
