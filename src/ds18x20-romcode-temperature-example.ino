@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(7);
+PRODUCT_VERSION(8);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -474,10 +474,10 @@ void initialize_solar_heater_relays() {
     digitalWrite(vDividerOFFpin, LOW);
 }
 
-#define Time_for_SolarHeater_ON 16 //10:00 AM CST (4:00 PM UTC)
+#define Time_for_SolarHeater_ON 15 //9:00 AM CST (3:00 PM UTC)
 #define Time_for_SolarHeater_OFF 21 //3:00 PM CST (9:00 PM UTC)
 #define MAX_SolarHeater_ON_Time 240000 // in millis
-#define Supercap_Charging_Period 30000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
+#define Supercap_Charging_Period 300000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 
 bool testingSolarCharger = false;
@@ -520,7 +520,7 @@ void test_of_Low_Battery_Voltage() {
         delay(200);
         digitalWrite(vDividerOFFpin, LOW);
         Particle.publish("Solar Heater OFF due to low battery", PRIVATE, NO_ACK);
-        Serial.println("Solar Heater OFF due to low battery");
+        //Serial.println("Solar Heater OFF due to low battery"); // ***DEBUG Serial and Particle.publish calls will crash the application code in Timer callback functions*** 
     }
 }
 Timer testingLowBatteryTimer(10000, test_of_Low_Battery_Voltage, true);
@@ -534,7 +534,7 @@ void test_of_Low_Light_Level() {
         delay(200);
         digitalWrite(vDividerOFFpin, LOW);
         Particle.publish("Solar Heater OFF due to low light levels", PRIVATE, NO_ACK);
-        Serial.println("Solar Heater OFF due to low light levels");
+        //Serial.println("Solar Heater OFF due to low light levels");
     }
 }
 Timer testingLowLightTimer(300000, test_of_Low_Light_Level, true);
@@ -555,8 +555,11 @@ void transition_from_Battery_Recovery_out() {
 Timer BatteryRecoveryTimer(Battery12v_Recovery_Period, transition_from_Battery_Recovery_out, true);
 
 
+bool flag_transition_from_Solar_Heater_to_Battery_Recovery = false; // Timer callbacks are causing hard faults.  Move all logic to "while" loop.
 bool debug_solar_heater_Timer_is_running = false; // DEBUG SolarHeaterTimer.isActive() keeps returning false while Timer is running
 void transition_from_Solar_Heater_to_Battery_Recovery() {
+    flag_transition_from_Solar_Heater_to_Battery_Recovery = true;
+    /*
     debug_solar_heater_Timer_is_running = false;
     digitalWrite(relay1pin, LOW);
     delay(100);
@@ -567,12 +570,16 @@ void transition_from_Solar_Heater_to_Battery_Recovery() {
     }
     BatteryRecoveryTimer.start();
     debug_battery_recovery_Timer_is_running = true;
+    */
 }
 Timer SolarHeaterTimer(MAX_SolarHeater_ON_Time, transition_from_Solar_Heater_to_Battery_Recovery, true);
 
 
+bool flag_transition_from_Supercap_Charger_to_Solar_Heater = false; // Timer callbacks are causing hard faults.  Move all logic to "while" loop.
 bool debug_supercap_charger_Timer_is_running = false; // DEBUG the SupercapChargerTimer.isActive() keeps returning false while Timer is running
 void transition_from_Supercap_Charger_to_Solar_Heater() {
+    flag_transition_from_Supercap_Charger_to_Solar_Heater = true;
+    /*
     debug_supercap_charger_Timer_is_running = false;
     delay(1000); // if Battery Recovery was just called, the Solar Heater relay may not be done switching
     digitalWrite(relay2pin, LOW);
@@ -585,6 +592,9 @@ void transition_from_Supercap_Charger_to_Solar_Heater() {
     // turn on high power heater, connected to D7
     int priorReading12vBattery = analogRead(vDividerREADpin);
     Particle.publish("Supercapacitor Charging timed out.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), priorReading12vBattery), PRIVATE);
+    Particle.process();
+    delay(1000);
+    */
 }
 Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Charger_to_Solar_Heater, true);
 
@@ -1258,6 +1268,48 @@ void loop()
                   delay(1000);
                   // ****** END DEBUG CODE ********
               }
+
+              if (flag_transition_from_Supercap_Charger_to_Solar_Heater == true) {
+                  flag_transition_from_Supercap_Charger_to_Solar_Heater = false;
+                  debug_supercap_charger_Timer_is_running = false;
+                  delay(1000); // if Battery Recovery was just called, the Solar Heater relay may not be done switching
+                  digitalWrite(relay2pin, LOW);
+                  delay(1000);
+                  digitalWrite(relay3pin, LOW);
+                  delay(200); // let relay connections break before connecting high current load
+                  SolarHeaterTimer.start();
+                  debug_solar_heater_Timer_is_running = true;
+                  digitalWrite(relay1pin, HIGH);
+                  // turn on high power heater, connected to D7
+                  int priorReading12vBattery = analogRead(vDividerREADpin);
+                  Particle.publish("Supercapacitor Charging timed out.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), priorReading12vBattery), PRIVATE);
+                  // ******** DEBUG CODE **********
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
+                  continue;
+              }
+
+              if (flag_transition_from_Solar_Heater_to_Battery_Recovery == true) {
+                  flag_transition_from_Solar_Heater_to_Battery_Recovery = false;
+                  debug_solar_heater_Timer_is_running = false;
+                  digitalWrite(relay1pin, LOW);
+                  delay(100);
+                  int lowestReading12vBattery = analogRead(vDividerREADpin);
+                  //if (lowestReading12vBattery < 3250) {
+                  if (lowestReading12vBattery < 2350) { // ??? 11.5v ??? with diode-skewed GND
+                    Particle.publish("12v battery voltage very low under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
+                  }
+                  BatteryRecoveryTimer.start();
+                  debug_battery_recovery_Timer_is_running = true;
+                  Particle.publish("Solar Heater timed out. Starting Battery Recovery.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE);
+                  // ******** DEBUG CODE **********
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
+                  continue;
+              }
+              
 
               int currentReading12vBattery = analogRead(vDividerREADpin);
               //if (currentReading12vBattery < 3200) { // ~12.0v
