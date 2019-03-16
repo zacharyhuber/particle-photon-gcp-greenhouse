@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(10);
+PRODUCT_VERSION(11);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -542,8 +542,11 @@ Timer testingLowLightTimer(300000, test_of_Low_Light_Level, true);
 
 bool reset_BatteryRecoveryTimer = false;
 
+bool flag_transition_from_Battery_Recovery_out = false; // Timer callbacks are causing hard faults. Move all logic to "while" loop.
 bool debug_battery_recovery_Timer_is_running = false; // DEBUG BatteryRecoveryTimer.isActive() keeps returning false while Timer is running
 void transition_from_Battery_Recovery_out() {
+    flag_transition_from_Battery_Recovery_out = true;
+    /*
     debug_battery_recovery_Timer_is_running = false;
     int highestReading12vBattery = analogRead(vDividerREADpin);
     //if (highestReading12vBattery < 3400) {
@@ -551,6 +554,7 @@ void transition_from_Battery_Recovery_out() {
         Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
         reset_BatteryRecoveryTimer = true;
     }
+    */
 }
 Timer BatteryRecoveryTimer(Battery12v_Recovery_Period, transition_from_Battery_Recovery_out, true);
 
@@ -1312,6 +1316,17 @@ void loop()
                   delay(1000);
                   // ****** END DEBUG CODE ********
                   continue;
+              }
+
+              if (flag_transition_from_Battery_Recovery_out == true) {
+                  flag_transition_from_Battery_Recovery_out = false;
+                  debug_battery_recovery_Timer_is_running = false;
+                  int highestReading12vBattery = analogRead(vDividerREADpin);
+                  //if (highestReading12vBattery < 3400) {
+                  if (highestReading12vBattery < 2650) { // <13.0v with diode-skewed GND
+                      Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
+                      reset_BatteryRecoveryTimer = true;
+                  }
               }
               
 
