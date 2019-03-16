@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(9);
+PRODUCT_VERSION(10);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -1297,7 +1297,7 @@ void loop()
                   delay(100);
                   int lowestReading12vBattery = analogRead(vDividerREADpin);
                   //if (lowestReading12vBattery < 3250) {
-                  if (lowestReading12vBattery < 2350) { // ??? 11.5v ??? with diode-skewed GND
+                  if (lowestReading12vBattery < 2150) { // ??? 11.5v ??? with diode-skewed GND
                     Particle.publish("12v battery voltage very low under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
                   }
                   BatteryRecoveryTimer.start();
@@ -1491,16 +1491,16 @@ void loop()
 
               if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
                   //if (currentReading12vBattery < 3350) { // ~12.5v
-                  if (currentReading12vBattery < 2150) { // ???~12.0v??? with diode-skewed GND
+                  if (currentReading12vBattery < 2050) { // ???~12.0v??? with diode-skewed GND
+                      int lowestReading12vBattery = analogRead(vDividerREADpin);
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
                       debug_solar_heater_Timer_is_running = false;
                       delay(100);
-                      int lowestReading12vBattery = analogRead(vDividerREADpin);
                       //if (lowestReading12vBattery < 3250) { // ~12.2v
-                      if (lowestReading12vBattery < 2050) { // ???~11.8v??? with diode-skewed GND
+                      if (lowestReading12vBattery < 1950) { // ???~11.5v??? with diode-skewed GND
                           //debugging publish, remove if this works:
-                          Particle.publish("Low battery under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
+                          Particle.publish("Very Low battery under load from Solar Heater.", String(lowestReading12vBattery), PRIVATE);
                           // ******** DEBUG CODE **********
                           Particle.process();
                           delay(1000);
@@ -1516,6 +1516,7 @@ void loop()
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
+                      continue;
                   } else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -200) {
                       // ******** DEBUG CODE **********
                       Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
@@ -1538,6 +1539,7 @@ void loop()
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
+                      continue;
 
                   } else {
                       // ******** DEBUG CODE **********
