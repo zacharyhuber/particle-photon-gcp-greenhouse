@@ -477,7 +477,7 @@ void initialize_solar_heater_relays() {
 #define Time_for_SolarHeater_ON 15 //9:00 AM CST (3:00 PM UTC)
 #define Time_for_SolarHeater_OFF 21 //3:00 PM CST (9:00 PM UTC)
 #define MAX_SolarHeater_ON_Time 240000 // in millis
-#define Supercap_Charging_Period 300000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
+#define Supercap_Charging_Period 240000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 
 bool testingSolarCharger = false;
@@ -1313,7 +1313,7 @@ void loop()
 
               int currentReading12vBattery = analogRead(vDividerREADpin);
               //if (currentReading12vBattery < 3200) { // ~12.0v
-              if (currentReading12vBattery < 2100) { // ??? 11.5v ??? with diode-skewed GND // DEBUG this shouldn't have triggered...
+              if (currentReading12vBattery < 1950) { // ??? 11.5v ??? with diode-skewed GND // DEBUG this shouldn't have triggered...
                   digitalWrite(relay1pin, LOW);
                   delay(500);
                   digitalWrite(relay2pin, LOW);
