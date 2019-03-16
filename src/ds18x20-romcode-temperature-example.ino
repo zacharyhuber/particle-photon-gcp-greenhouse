@@ -1293,12 +1293,16 @@ void loop()
               if (flag_transition_from_Solar_Heater_to_Battery_Recovery == true) {
                   flag_transition_from_Solar_Heater_to_Battery_Recovery = false;
                   debug_solar_heater_Timer_is_running = false;
-                  digitalWrite(relay1pin, LOW);
-                  delay(100);
                   int lowestReading12vBattery = analogRead(vDividerREADpin);
+                  digitalWrite(relay1pin, LOW);
+                  //delay(100);
                   //if (lowestReading12vBattery < 3250) {
                   if (lowestReading12vBattery < 2150) { // ??? 11.5v ??? with diode-skewed GND
-                    Particle.publish("12v battery voltage very low under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
+                    Particle.publish("12v battery voltage low under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
+                    // ******** DEBUG CODE **********
+                    Particle.process();
+                    delay(1000);
+                    // ****** END DEBUG CODE ********
                   }
                   BatteryRecoveryTimer.start();
                   debug_battery_recovery_Timer_is_running = true;
