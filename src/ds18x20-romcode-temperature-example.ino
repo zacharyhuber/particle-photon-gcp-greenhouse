@@ -1454,20 +1454,38 @@ void loop()
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
                   if (currentReading12vBattery > 3050) { // ???>13.4v??? with diode-skewed GND
-                      delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
-                      BatteryRecoveryTimer.dispose();
-                      debug_battery_recovery_Timer_is_running = false;
-                      digitalWrite(relay3pin, HIGH);
-                      delay(1000);
-                      digitalWrite(relay2pin, HIGH);
-                      SupercapChargerTimer.start();
-                      debug_supercap_charger_Timer_is_running = true;
-                      delay(200); // avoid reading the peak current into supercapacitor with INA219
-                      Particle.publish("Battery Recovery complete. Supercapacitor Charger ON. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
-                      // ******** DEBUG CODE **********
-                      Particle.process();
-                      delay(1000);
-                      // ****** END DEBUG CODE ********
+                      if (ina219.getBusVoltage_V() > 2.0) {
+                          delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
+                          BatteryRecoveryTimer.dispose();
+                          debug_battery_recovery_Timer_is_running = false;
+                          SolarHeaterTimer.start();
+                          debug_solar_heater_Timer_is_running = true;
+                          digitalWrite(relay1pin, HIGH);
+                          // turn on high power heater, connected to D7
+                          //delay(200); // Read voltage drop under load
+                          int priorReading12vBattery = analogRead(vDividerREADpin); // unused variable was throwing a makeError in compiler
+                          Particle.publish("Supercapacitor & Battery CHARGED. Solar Heating Element STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), priorReading12vBattery), PRIVATE, NO_ACK);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
+                          continue;
+                      } else {
+                          delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
+                          BatteryRecoveryTimer.dispose();
+                          debug_battery_recovery_Timer_is_running = false;
+                          digitalWrite(relay3pin, HIGH);
+                          delay(1000);
+                          digitalWrite(relay2pin, HIGH);
+                          SupercapChargerTimer.start();
+                          debug_supercap_charger_Timer_is_running = true;
+                          delay(200); // avoid reading the peak current into supercapacitor with INA219
+                          Particle.publish("Battery Recovery complete. Supercapacitor Charger ON. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
+                      }
                   }
               }
 
@@ -1493,7 +1511,7 @@ void loop()
                       }
                       BatteryRecoveryTimer.start();
                       debug_battery_recovery_Timer_is_running = true;
-                      Particle.publish("Battery Recovery STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
+                      Particle.publish("12v Battery LOW. Battery Recovery STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
                       delay(1000);
