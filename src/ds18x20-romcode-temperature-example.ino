@@ -1505,6 +1505,12 @@ void loop()
                           delay(1000);
                           // ****** END DEBUG CODE ********
                       }
+                  } else {
+                      Particle.publish("debug Battery Recovering. 12v Battery Voltage:", String(currentReading12vBattery), PRIVATE, NO_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
                   }
               }
 
@@ -1515,7 +1521,7 @@ void loop()
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
                       debug_solar_heater_Timer_is_running = false;
-                      delay(100);
+                      //delay(100);
                       //if (lowestReading12vBattery < 3250) { // ~12.2v
                       if (lowestReading12vBattery < 1950) { // ???~11.5v??? with diode-skewed GND
                           //debugging publish, remove if this works:
