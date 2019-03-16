@@ -1543,8 +1543,9 @@ void loop()
                       // ****** END DEBUG CODE ********
                       continue;
                   } else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -200) {
+                      int lowestReading12vBattery = analogRead(vDividerREADpin);
                       // ******** DEBUG CODE **********
-                      Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                      Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
                       Particle.process();
                       delay(1000);
                       // ****** END DEBUG CODE ********
