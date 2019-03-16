@@ -475,7 +475,7 @@ void initialize_solar_heater_relays() {
 }
 
 #define Time_for_SolarHeater_ON 15 //9:00 AM CST (3:00 PM UTC)
-#define Time_for_SolarHeater_OFF 21 //3:00 PM CST (9:00 PM UTC)
+#define Time_for_SolarHeater_OFF 23 //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
 #define MAX_SolarHeater_ON_Time 240000 // in millis
 #define Supercap_Charging_Period 240000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
@@ -1516,7 +1516,7 @@ void loop()
 
               if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
                   //if (currentReading12vBattery < 3350) { // ~12.5v
-                  if (currentReading12vBattery < 2050) { // ???~12.0v??? with diode-skewed GND
+                  if (currentReading12vBattery < 2150) { // ???~12.0v??? with diode-skewed GND
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
