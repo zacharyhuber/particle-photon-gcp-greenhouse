@@ -277,6 +277,10 @@ bool ONEWIRE_sensors_finished = false;
 
 //const int PublishFrequency = 1200000; // gcp upload frequency
 //unsigned long LastPublish = 20000;
+const int AdjustablePublishPeriod = 10; // in Minutes
+//const int AdjustablePublishPeriod = 20;
+//const int AdjustablePublishPeriod = 30;
+//const int AdjustablePublishPeriod = 60;
 
 char googleString[255]; // sensor_data_toGCP JSON string, 255 bytes max for Particle.publish data object (622 bytes after DeviceOS v0.8.0)
     //=========================================================================
@@ -1049,6 +1053,10 @@ void loop()
   */
 
   // Conditional statement for Publishing to Google Cloud Platform
+  if (AdjustablePublishPeriod == 10 && ONEWIRE_sensors_finished == true && I2C_sensors_finished == true) {}
+  //if (AdjustablePublishPeriod == 20 && ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {}
+  //if (AdjustablePublishPeriod == 30 && ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 0) || (currentTens_place == 3))) {}
+  //if (AdjustablePublishPeriod == 60 && ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && currentTens_place == 0) {}
   if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
 
       //FuelGauge fuel; //Electron code
