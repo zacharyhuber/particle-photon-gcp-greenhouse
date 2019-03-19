@@ -419,9 +419,9 @@ void set_wake_time(void)
     Turn on (then off) voltage divider to read 12v Battery Voltage
 */
 /**************************************************************************/
-#define vDividerONpin D13
-#define vDividerOFFpin D8
-#define vDividerREADpin A5
+const int vDividerONpin = D13;
+const int vDividerOFFpin = D8;
+const int vDividerREADpin = A5;
 
 int read12vBatteryVoltage(void)
 {
@@ -450,10 +450,10 @@ int read12vBatteryVoltage(void)
         and turn off solar dump load when battery voltage drops.
 */
 /**************************************************************************/
-#define relay0pin D2
-#define relay1pin D3
-#define relay2pin D4
-#define relay3pin D5
+const int relay0pin = D2;
+const int relay1pin = D3;
+const int relay2pin = D4;
+const int relay3pin = D5;
 
 //Called in STARTUP() function
 void initialize_solar_heater_relays() {
@@ -474,11 +474,11 @@ void initialize_solar_heater_relays() {
     digitalWrite(vDividerOFFpin, LOW);
 }
 
-#define Time_for_SolarHeater_ON 15 //9:00 AM CST (3:00 PM UTC)
-#define Time_for_SolarHeater_OFF 23 //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
-#define MAX_SolarHeater_ON_Time 240000 // in millis
-#define Supercap_Charging_Period 240000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
-#define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+const int Time_for_SolarHeater_ON = 15; //9:00 AM CST (3:00 PM UTC)
+const int Time_for_SolarHeater_OFF = 23; //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
+const int MAX_SolarHeater_ON_Time = 240000; // in millis
+const int Supercap_Charging_Period = 240000; // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
+const int Battery12v_Recovery_Period = 120000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 
 bool testingSolarCharger = false;
 bool testingLowBattery = false;
