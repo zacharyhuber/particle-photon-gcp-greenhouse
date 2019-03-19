@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(11);
+PRODUCT_VERSION(12);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -1101,23 +1101,62 @@ void loop()
     //*********************************
     // format the sensor data as JSON, so it can be easily parsed
     //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, Time.now());
-    switch (currentTens_place) {
-      case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
-              break;
-      case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f,\"bV12_1\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0, ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1, bV12_1);
-              break;
-      case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
-              break;
-      case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"bV12_2\":%d,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f,\"bV12_3\":%d}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, bV12_2, ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3, bV12_3);
-              break;
-      case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
-              break;
-      case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"bV12_4\":%d,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f,\"bV12_5\":%d}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, bV12_4, ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5, bV12_5);
-              break;
-      default: //Particle.connect();
-                Particle.publish("Batch timing error", NULL, PRIVATE);
-              break;
+    if (AdjustablePublishPeriod == 10) {
+        switch (currentTens_place) {
+            case 0: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0);
+                    break;
+            case 1: sprintf(googleString, "{\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f,\"bV12_1\":%d}", ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1, bV12_1);
+                    break;
+            case 2: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"bV12_2\":%d}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, bV12_2);
+                    break;
+            case 3: sprintf(googleString, "{\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f,\"bV12_3\":%d}", ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3, bV12_3);
+                    break;
+            case 4: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"bV12_4\":%d}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, bV12_4);
+                    break;
+            case 5: sprintf(googleString, "{\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f,\"bV12_5\":%d}", ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5, bV12_5);
+                    break;
+            default: //Particle.connect();
+                        Particle.publish("Batch timing error", NULL, PRIVATE);
+                    break;
+        }
     }
+    if (AdjustablePublishPeriod == 20) {
+        switch (currentTens_place) {
+            case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+                    break;
+            case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f,\"bV12_1\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0, ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1, bV12_1);
+                    break;
+            case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+                    break;
+            case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"bV12_2\":%d,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f,\"bV12_3\":%d}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, bV12_2, ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3, bV12_3);
+                    break;
+            case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+                    break;
+            case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"bV12_4\":%d,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f,\"bV12_5\":%d}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, bV12_4, ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5, bV12_5);
+                    break;
+            default: //Particle.connect();
+                    Particle.publish("Batch timing error", NULL, PRIVATE);
+                    break;
+        }
+    }
+    // DEBUG - REMOVE IF ADJUSTABLE PUBLISHES WORK.
+    //    switch (currentTens_place) {
+    //    case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+    //            break;
+    //    case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f,\"bV12_1\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0, ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1, bV12_1);
+    //            break;
+    //    case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+    //            break;
+    //    case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"bV12_2\":%d,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f,\"bV12_3\":%d}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, bV12_2, ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3, bV12_3);
+    //            break;
+    //    case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+    //            break;
+    //    case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"bV12_4\":%d,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f,\"bV12_5\":%d}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, bV12_4, ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5, bV12_5);
+    //            break;
+    //    default: //Particle.connect();
+    //                Particle.publish("Batch timing error", NULL, PRIVATE);
+    //            break;
+    //}
 
     I2C_sensors_finished = false;
     ONEWIRE_sensors_finished = false; 
