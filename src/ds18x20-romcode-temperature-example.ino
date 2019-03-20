@@ -801,7 +801,7 @@ void loop()
   int currentTens_place = (Time.minute() / 10);
 
   //if (currentTens_place == 5) {
-  if (Time.hour() == 9 && currentTens_place == 5) {
+  if (Time.hour() == 14 && currentTens_place == 5) {
       Particle.connect();
       waitUntil(Particle.connected);
       Particle.process();
