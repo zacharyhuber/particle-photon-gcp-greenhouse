@@ -2040,7 +2040,7 @@ void solarHeaterCYCLE() {
                           SupercapChargerTimer.start();
                           debug_supercap_charger_Timer_is_running = true;
                           delay(200); // avoid reading the peak current into supercapacitor with INA219
-                          Particle.publish("Battery Recovery complete. Supercapacitor Charger ON. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                          Particle.publish("Battery Recovery complete. Supercapacitor Charger ON.", String::format("{\"Supercapacitor_Current\":%f,\"12vBattery_Voltage\":%d}", ina219.getCurrent_mA(), currentReading12vBattery), PRIVATE, NO_ACK);
                           // ******** DEBUG CODE **********
                           Particle.process();
                           delay(1000);
