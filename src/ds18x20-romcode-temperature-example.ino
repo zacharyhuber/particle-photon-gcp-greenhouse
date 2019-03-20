@@ -798,6 +798,12 @@ void setup()
   }
   delay(15);    // let the chip initialize
 
+
+  if (!Time.isValid()) {
+      Particle.syncTime();
+  }
+  waitFor (Time.isValid, 60000);
+
 }
 
 void loop()
