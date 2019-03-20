@@ -483,7 +483,7 @@ void initialize_solar_heater_relays() {
 #define Time_for_SolarHeater_OFF 23 //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
 #define MAX_SolarHeater_ON_Time 240000 // in millis
 #define Supercap_Charging_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
-#define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+#define Battery12v_Recovery_Period 60000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 
 bool testingSolarCharger = false;
 bool testingLowBattery = false;
@@ -1864,7 +1864,7 @@ void solarHeaterCYCLE() {
                   debug_battery_recovery_Timer_is_running = false;
                   int highestReading12vBattery = analogRead(vDividerREADpin);
                   //if (highestReading12vBattery < 3400) {
-                  if (highestReading12vBattery < 2650) { // <13.0v with diode-skewed GND
+                  if (highestReading12vBattery < 3700) { // <13.0v with diode-skewed GND
                       Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
                       reset_BatteryRecoveryTimer = true;
                   }
@@ -2013,7 +2013,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3900) { // ???>13.9v??? with diode-skewed GND
+                  if (currentReading12vBattery > 4000) { // ???>13.9v??? with diode-skewed GND
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
@@ -2083,7 +2083,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  } else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -200) {
+                  /*} else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -200) {
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       // ******** DEBUG CODE **********
                       Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
@@ -2107,7 +2107,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-
+                      */
                   } else {
                       // ******** DEBUG CODE **********
                       Particle.publish("debug SolarHeater.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
