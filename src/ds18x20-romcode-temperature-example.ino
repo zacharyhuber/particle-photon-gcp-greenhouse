@@ -482,7 +482,7 @@ void initialize_solar_heater_relays() {
 #define Time_for_SolarHeater_ON 15 //9:00 AM CST (3:00 PM UTC)
 #define Time_for_SolarHeater_OFF 23 //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
 #define MAX_SolarHeater_ON_Time 240000 // in millis
-#define Supercap_Charging_Period 240000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
+#define Supercap_Charging_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 #define Battery12v_Recovery_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 
 bool testingSolarCharger = false;
@@ -1922,7 +1922,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  } else if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+                  } else if (ina219.getCurrent_mA() < 500 && ina219.getCurrent_mA() > -500) {
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
                       digitalWrite(relay3pin, LOW);
@@ -2013,7 +2013,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3050) { // ???>13.4v??? with diode-skewed GND
+                  if (currentReading12vBattery > 3650) { // ???>13.9v??? with diode-skewed GND
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
