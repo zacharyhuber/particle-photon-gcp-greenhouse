@@ -1922,7 +1922,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  } else if (ina219.getCurrent_mA() < 500 && ina219.getCurrent_mA() > -500) {
+                  } else if (ina219.getCurrent_mA() < 1000 && ina219.getCurrent_mA() > -500) {
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
                       digitalWrite(relay3pin, LOW);
@@ -2013,7 +2013,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3650) { // ???>13.9v??? with diode-skewed GND
+                  if (currentReading12vBattery > 3900) { // ???>13.9v??? with diode-skewed GND
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
