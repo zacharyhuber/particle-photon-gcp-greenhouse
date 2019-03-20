@@ -1864,7 +1864,7 @@ void solarHeaterCYCLE() {
                   debug_battery_recovery_Timer_is_running = false;
                   int highestReading12vBattery = analogRead(vDividerREADpin);
                   //if (highestReading12vBattery < 3400) {
-                  if (highestReading12vBattery < 3700) { // <13.0v with diode-skewed GND
+                  if (highestReading12vBattery < 3650) { // <13.0v with diode-skewed GND
                       Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
                       reset_BatteryRecoveryTimer = true;
                   }
@@ -1922,7 +1922,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  } else if (ina219.getCurrent_mA() < 1000 && ina219.getCurrent_mA() > -500) {
+                  } else if (ina219.getCurrent_mA() < 800 && ina219.getCurrent_mA() > -500) {
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
                       digitalWrite(relay3pin, LOW);
@@ -2013,7 +2013,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 4000) { // ???>13.9v??? with diode-skewed GND
+                  if (currentReading12vBattery > 3650) { // ???>13.9v??? with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
@@ -2083,7 +2083,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  /*} else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -200) {
+                  /*} else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -100) {
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       // ******** DEBUG CODE **********
                       Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
@@ -2108,6 +2108,20 @@ void solarHeaterCYCLE() {
                       // ****** END DEBUG CODE ********
                       continue;
                       */
+                  } else if (ina219.getBusVoltage_V() < 0.7) {
+                      int lowestReading12vBattery = analogRead(vDividerREADpin);
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug Supercapacitor Voltage is LOW. Battery Recovery STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      //delay(1000); // if relays just switched they may not have demagnetized yet
+                      digitalWrite(relay1pin, LOW);
+                      SolarHeaterTimer.dispose();
+                      debug_solar_heater_Timer_is_running = false;
+                      BatteryRecoveryTimer.start();
+                      debug_battery_recovery_Timer_is_running = true;
+                      continue;
                   } else {
                       // ******** DEBUG CODE **********
                       Particle.publish("debug SolarHeater.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
