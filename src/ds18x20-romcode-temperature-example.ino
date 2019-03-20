@@ -806,7 +806,7 @@ void loop()
   int currentTens_place = (Time.minute() / 10);
 
   //if (currentTens_place == 5) {
-  if (Time.hour() == 9 && currentTens_place == 5) {
+  if (Time.hour() == 14 && currentTens_place == 5) {
       Particle.connect();
       waitUntil(Particle.connected);
       Particle.process();
@@ -1102,6 +1102,11 @@ void loop()
     // format the sensor data as JSON, so it can be easily parsed
     //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, Time.now());
     if (AdjustablePublishPeriod == 10) {
+        // ******** DEBUG CODE **********
+        Particle.publish("debug AdjustablePublishPeriod == 10 & currentTens_place == ", String(currentTens_place), PRIVATE, WITH_ACK);
+        Particle.process();
+        delay(1000);
+        // ****** END DEBUG CODE ********
         switch (currentTens_place) {
             case 0: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0);
                     break;
