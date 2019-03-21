@@ -1922,7 +1922,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  } else if (ina219.getCurrent_mA() < 800 && ina219.getCurrent_mA() > -500) {
+                  } else if (ina219.getCurrent_mA() < 600 && ina219.getCurrent_mA() > -500) {
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
                       digitalWrite(relay3pin, LOW);
@@ -2108,7 +2108,7 @@ void solarHeaterCYCLE() {
                       // ****** END DEBUG CODE ********
                       continue;
                       */
-                  } else if (ina219.getBusVoltage_V() < 0.7) {
+                  } else if (ina219.getBusVoltage_V() < 0.5) {
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       // ******** DEBUG CODE **********
                       Particle.publish("debug Supercapacitor Voltage is LOW. Battery Recovery STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
