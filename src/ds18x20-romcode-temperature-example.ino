@@ -546,6 +546,7 @@ Timer testingLowLightTimer(300000, test_of_Low_Light_Level, true);
 
 
 bool reset_BatteryRecoveryTimer = false;
+bool minimum_battery_recovery_Duration = false;
 
 bool flag_transition_from_Battery_Recovery_out = false; // Timer callbacks are causing hard faults. Move all logic to "while" loop.
 bool debug_battery_recovery_Timer_is_running = false; // DEBUG BatteryRecoveryTimer.isActive() keeps returning false while Timer is running
@@ -1862,6 +1863,7 @@ void solarHeaterCYCLE() {
               if (flag_transition_from_Battery_Recovery_out == true) {
                   flag_transition_from_Battery_Recovery_out = false;
                   debug_battery_recovery_Timer_is_running = false;
+                  minimum_battery_recovery_Duration = false;
                   int highestReading12vBattery = analogRead(vDividerREADpin);
                   //if (highestReading12vBattery < 3400) {
                   if (highestReading12vBattery < 3650) { // <13.0v with diode-skewed GND
@@ -2013,7 +2015,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3650) { // ???>13.9v??? with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
+                  if (currentReading12vBattery > 3650 && minimum_battery_recovery_Duration == false) { // ???>13.9v??? with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
@@ -2057,7 +2059,7 @@ void solarHeaterCYCLE() {
 
               if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
                   //if (currentReading12vBattery < 3350) { // ~12.5v
-                  if (currentReading12vBattery < 2150) { // ???~12.0v??? with diode-skewed GND
+                  if (currentReading12vBattery < 2100) { // ???~12.0v??? with diode-skewed GND
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
@@ -2077,6 +2079,7 @@ void solarHeaterCYCLE() {
                       }
                       BatteryRecoveryTimer.start();
                       debug_battery_recovery_Timer_is_running = true;
+                      minimum_battery_recovery_Duration = true;
                       Particle.publish("12v Battery LOW. Battery Recovery STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
