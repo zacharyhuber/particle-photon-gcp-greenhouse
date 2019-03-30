@@ -532,7 +532,7 @@ Timer testingLowBatteryTimer(10000, test_of_Low_Battery_Voltage, true);
 
 
 void test_of_Low_Light_Level() {
-    if (lux < 800) {
+    if (lux < 500) {
         testingLowLight = false;
         solarHeaterON = false;
         digitalWrite(vDividerOFFpin, HIGH);
@@ -637,7 +637,7 @@ Timer pause_for_Sensors_Timer(540000, pauseSolarHeater, true);
 
 void turnONsolarHeater(void) 
 {
-    if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 1000) {
+    if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 600) {
         
         //if (testingSolarCharger == false && read12vBatteryVoltage() > 3475) { // ~13.0v
         if (testingSolarCharger == false && read12vBatteryVoltage() > 2650) { // ~12.9v with diode-skewed GND
@@ -677,7 +677,7 @@ void turnOFFsolarHeater(void)
         Serial.println("Solar Heater OFF to charge battery for the night");
     }
     if (!testingLowLightTimer.isActive()) {
-        if (solarHeaterON == true && lux < 800) {
+        if (solarHeaterON == true && lux < 500) {
             testingLowLight = true;
             testingLowLightTimer.start();
         }
@@ -1282,7 +1282,7 @@ void loop()
           ONEWIRE_sensors_finished = false;
           
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
-          if (batteryReading12v > 2700 && lux > 1000) { // ~13.0v with diode-skewed GND
+          if (batteryReading12v > 2700 && lux > 600) { // ~13.0v with diode-skewed GND
               delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
               turnONsolarHeater();
               Particle.publish("debug turnONsolarHeater", PRIVATE);
@@ -1291,7 +1291,7 @@ void loop()
               Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
           }
           //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ~12.0v
-          if (batteryReading12v < 2400 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
+          if (batteryReading12v < 2400 || lux < 500 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
               turnOFFsolarHeater();
           }
           batteryReading12v = 0;
@@ -1756,7 +1756,7 @@ void loop()
 
 void checkSolarConditions() {
     //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
-    if (batteryReading12v > 2700 && lux > 1000) { // ~13.0v with diode-skewed GND
+    if (batteryReading12v > 2700 && lux > 600) { // ~13.0v with diode-skewed GND
         delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
         turnONsolarHeater();
         Particle.publish("debug turnONsolarHeater", PRIVATE);
@@ -1765,7 +1765,7 @@ void checkSolarConditions() {
         Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
     }
     //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ~12.0v
-    if (batteryReading12v < 2400 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
+    if (batteryReading12v < 2400 || lux < 500 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
         turnOFFsolarHeater();
     }
 
