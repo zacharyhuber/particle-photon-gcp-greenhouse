@@ -492,7 +492,7 @@ bool solarHeaterON = false;
 
 void test_of_Solar_Charger() {
     //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
-    if (analogRead(vDividerREADpin) > 2700) { // ~13.0v with diode-skewed GND
+    if (analogRead(vDividerREADpin) > 3600) { // ~13.4v with diode-skewed GND
 
         testingSolarCharger = false;
         solarHeaterON = true;
@@ -1866,7 +1866,7 @@ void solarHeaterCYCLE() {
                   minimum_battery_recovery_Duration = false;
                   int highestReading12vBattery = analogRead(vDividerREADpin);
                   //if (highestReading12vBattery < 3400) {
-                  if (highestReading12vBattery < 3650) { // <13.0v with diode-skewed GND
+                  if (highestReading12vBattery < 3850) { // <13.0v with diode-skewed GND
                       Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
                       reset_BatteryRecoveryTimer = true;
                   }
@@ -2015,7 +2015,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3650 && minimum_battery_recovery_Duration == false) { // ???>13.9v??? with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
+                  if (currentReading12vBattery > 3950 && minimum_battery_recovery_Duration == false) { // ???>13.9v??? with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
