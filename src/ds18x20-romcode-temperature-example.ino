@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(11);
+PRODUCT_VERSION(12);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -277,6 +277,10 @@ bool ONEWIRE_sensors_finished = false;
 
 //const int PublishFrequency = 1200000; // gcp upload frequency
 //unsigned long LastPublish = 20000;
+const int AdjustablePublishPeriod = 10; // in Minutes
+//const int AdjustablePublishPeriod = 20;
+//const int AdjustablePublishPeriod = 30;
+//const int AdjustablePublishPeriod = 60;
 
 char googleString[255]; // sensor_data_toGCP JSON string, 255 bytes max for Particle.publish data object (622 bytes after DeviceOS v0.8.0)
     //=========================================================================
@@ -423,6 +427,7 @@ const int vDividerONpin = D13;
 const int vDividerOFFpin = D8;
 const int vDividerREADpin = A5;
 
+int batteryReading12v = 0;
 int read12vBatteryVoltage(void)
 {
     //pinMode(vDividerONpin, OUTPUT); // moved to STARTUP()
@@ -432,7 +437,7 @@ int read12vBatteryVoltage(void)
     delay(200);
     digitalWrite(vDividerONpin, LOW);
     delay(500);
-    float batteryReading12v = analogRead(vDividerREADpin);
+    batteryReading12v = analogRead(vDividerREADpin);
     batteryReading12v = (batteryReading12v + analogRead(vDividerREADpin)) / 2;
     batteryReading12v = (batteryReading12v + analogRead(vDividerREADpin)) / 2;
     batteryReading12v = (batteryReading12v + analogRead(vDividerREADpin)) / 2;
@@ -474,11 +479,19 @@ void initialize_solar_heater_relays() {
     digitalWrite(vDividerOFFpin, LOW);
 }
 
+<<<<<<< HEAD
 const int Time_for_SolarHeater_ON = 15; //9:00 AM CST (3:00 PM UTC)
 const int Time_for_SolarHeater_OFF = 23; //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
 const int MAX_SolarHeater_ON_Time = 240000; // in millis
 const int Supercap_Charging_Period = 240000; // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 const int Battery12v_Recovery_Period = 120000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+=======
+#define Time_for_SolarHeater_ON 15 //9:00 AM CST (3:00 PM UTC)
+#define Time_for_SolarHeater_OFF 23 //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
+#define MAX_SolarHeater_ON_Time 240000 // in millis
+#define Supercap_Charging_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
+#define Battery12v_Recovery_Period 60000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+>>>>>>> adjustable-publish-frequency
 
 bool testingSolarCharger = false;
 bool testingLowBattery = false;
@@ -487,7 +500,7 @@ bool solarHeaterON = false;
 
 void test_of_Solar_Charger() {
     //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
-    if (analogRead(vDividerREADpin) > 2700) { // ~13.0v with diode-skewed GND
+    if (analogRead(vDividerREADpin) > 3600) { // ~13.4v with diode-skewed GND
 
         testingSolarCharger = false;
         solarHeaterON = true;
@@ -527,7 +540,7 @@ Timer testingLowBatteryTimer(10000, test_of_Low_Battery_Voltage, true);
 
 
 void test_of_Low_Light_Level() {
-    if (lux < 800) {
+    if (lux < 500) {
         testingLowLight = false;
         solarHeaterON = false;
         digitalWrite(vDividerOFFpin, HIGH);
@@ -541,6 +554,7 @@ Timer testingLowLightTimer(300000, test_of_Low_Light_Level, true);
 
 
 bool reset_BatteryRecoveryTimer = false;
+bool minimum_battery_recovery_Duration = false;
 
 bool flag_transition_from_Battery_Recovery_out = false; // Timer callbacks are causing hard faults. Move all logic to "while" loop.
 bool debug_battery_recovery_Timer_is_running = false; // DEBUG BatteryRecoveryTimer.isActive() keeps returning false while Timer is running
@@ -631,7 +645,7 @@ Timer pause_for_Sensors_Timer(540000, pauseSolarHeater, true);
 
 void turnONsolarHeater(void) 
 {
-    if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 1000) {
+    if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 600) {
         
         //if (testingSolarCharger == false && read12vBatteryVoltage() > 3475) { // ~13.0v
         if (testingSolarCharger == false && read12vBatteryVoltage() > 2650) { // ~12.9v with diode-skewed GND
@@ -671,7 +685,7 @@ void turnOFFsolarHeater(void)
         Serial.println("Solar Heater OFF to charge battery for the night");
     }
     if (!testingLowLightTimer.isActive()) {
-        if (solarHeaterON == true && lux < 800) {
+        if (solarHeaterON == true && lux < 500) {
             testingLowLight = true;
             testingLowLightTimer.start();
         }
@@ -792,6 +806,12 @@ void setup()
       Particle.publish("No HDC1000 detected ...  Check your wiring or I2C ADDR!", PRIVATE);
   }
   delay(15);    // let the chip initialize
+
+
+  if (!Time.isValid()) {
+      Particle.syncTime();
+  }
+  waitFor (Time.isValid, 60000);
 
 }
 
@@ -1049,7 +1069,11 @@ void loop()
   */
 
   // Conditional statement for Publishing to Google Cloud Platform
-  if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
+  if (AdjustablePublishPeriod == 10 && ONEWIRE_sensors_finished == true && I2C_sensors_finished == true) {
+  //if (AdjustablePublishPeriod == 20 && ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
+  //if (AdjustablePublishPeriod == 30 && ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 0) || (currentTens_place == 3))) {
+  //if (AdjustablePublishPeriod == 60 && ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && currentTens_place == 0) {
+  //if (ONEWIRE_sensors_finished == true && I2C_sensors_finished == true && ((currentTens_place == 1) || (currentTens_place == 3) || (currentTens_place == 5))) {
 
       //FuelGauge fuel; //Electron code
       //float batteryVoltage3v = fuel.getVCell(); //Electron code
@@ -1071,7 +1095,7 @@ void loop()
       }
 
       //float batteryVoltage12v = ((read12vBatteryVoltage() / 4095) *  //14.2); // Would need to determine exact voltages of battery for the given divider and analog input.
-      int batteryReading12v = read12vBatteryVoltage();
+      batteryReading12v = read12vBatteryVoltage();
 
       switch (currentTens_place) {
           case 0: bV12_0 = batteryReading12v;
@@ -1092,30 +1116,74 @@ void loop()
     //*********************************
     // format the sensor data as JSON, so it can be easily parsed
     //sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, Time.now());
-    switch (currentTens_place) {
-      case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
-              break;
-      case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f,\"bV12_1\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0, ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1, bV12_1);
-              break;
-      case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
-              break;
-      case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"bV12_2\":%d,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f,\"bV12_3\":%d}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, bV12_2, ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3, bV12_3);
-              break;
-      case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
-              break;
-      case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"bV12_4\":%d,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f,\"bV12_5\":%d}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, bV12_4, ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5, bV12_5);
-              break;
-      default: //Particle.connect();
-                Particle.publish("Batch timing error", NULL, PRIVATE);
-              break;
+    if (AdjustablePublishPeriod == 10) {
+        // ******** DEBUG CODE **********
+        Particle.publish("debug AdjustablePublishPeriod == 10 & currentTens_place == ", String(currentTens_place), PRIVATE, WITH_ACK);
+        Particle.process();
+        delay(1000);
+        // ****** END DEBUG CODE ********
+        switch (currentTens_place) {
+            case 0: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0);
+                    break;
+            case 1: sprintf(googleString, "{\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f,\"bV12_1\":%d}", ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1, bV12_1);
+                    break;
+            case 2: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"bV12_2\":%d}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, bV12_2);
+                    break;
+            case 3: sprintf(googleString, "{\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f,\"bV12_3\":%d}", ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3, bV12_3);
+                    break;
+            case 4: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"bV12_4\":%d}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, bV12_4);
+                    break;
+            case 5: sprintf(googleString, "{\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f,\"bV12_5\":%d}", ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5, bV12_5);
+                    break;
+            default: //Particle.connect();
+                        Particle.publish("Batch timing error", NULL, PRIVATE);
+                    break;
+        }
     }
+    if (AdjustablePublishPeriod == 20) {
+        switch (currentTens_place) {
+            case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+                    break;
+            case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f,\"bV12_1\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0, ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1, bV12_1);
+                    break;
+            case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+                    break;
+            case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"bV12_2\":%d,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f,\"bV12_3\":%d}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, bV12_2, ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3, bV12_3);
+                    break;
+            case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+                    break;
+            case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"bV12_4\":%d,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f,\"bV12_5\":%d}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, bV12_4, ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5, bV12_5);
+                    break;
+            default: //Particle.connect();
+                    Particle.publish("Batch timing error", NULL, PRIVATE);
+                    break;
+        }
+    }
+    // DEBUG - REMOVE IF ADJUSTABLE PUBLISHES WORK.
+    //    switch (currentTens_place) {
+    //    case 0: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+    //            break;
+    //    case 1: sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"bV3_0\":%f,\"bV12_0\":%d,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f,\"bV3_1\":%f,\"bV12_1\":%d}", ts0, L0, wT0, gT0, hT0, aT0, aH0, bV3_0, bV12_0, ts1, L1, wT1, gT1, hT1, aT1, aH1, bV3_1, bV12_1);
+    //            break;
+    //    case 2: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+    //            break;
+    //    case 3: sprintf(googleString, "{\"ts2\":%ld,\"L2\":%.0f,\"wT2\":%.2f,\"gT2\":%.2f,\"hT2\":%.2f,\"aT2\":%.2f,\"aH2\":%.0f,\"bV3_2\":%f,\"bV12_2\":%d,\"ts3\":%ld,\"L3\":%.0f,\"wT3\":%.2f,\"gT3\":%.2f,\"hT3\":%.2f,\"aT3\":%.2f,\"aH3\":%.0f,\"bV3_3\":%f,\"bV12_3\":%d}", ts2, L2, wT2, gT2, hT2, aT2, aH2, bV3_2, bV12_2, ts3, L3, wT3, gT3, hT3, aT3, aH3, bV3_3, bV12_3);
+    //            break;
+    //    case 4: sprintf(googleString, "{\"lux\":%f,\"waterTemp\":%.2f,\"greenhouseTemp\":%.2f,\"heattankTemp\":%.2f,\"ambientTemp\":%.2f,\"ambientHumidity\":%f,\"3vBattery\":%f,\"12vBattery\":%d,\"timestamp\":%ld}", lux, waterTemp, greenhouseTemp, heattankTemp, ambientTempF, ambientHumidity, batteryVoltage3v, batteryReading12v, Time.now());
+    //            break;
+    //    case 5: sprintf(googleString, "{\"ts4\":%ld,\"L4\":%.0f,\"wT4\":%.2f,\"gT4\":%.2f,\"hT4\":%.2f,\"aT4\":%.2f,\"aH4\":%.0f,\"bV3_4\":%f,\"bV12_4\":%d,\"ts5\":%ld,\"L5\":%.0f,\"wT5\":%.2f,\"gT5\":%.2f,\"hT5\":%.2f,\"aT5\":%.2f,\"aH5\":%.0f,\"bV3_5\":%f,\"bV12_5\":%d}", ts4, L4, wT4, gT4, hT4, aT4, aH4, bV3_4, bV12_4, ts5, L5, wT5, gT5, hT5, aT5, aH5, bV3_5, bV12_5);
+    //            break;
+    //    default: //Particle.connect();
+    //                Particle.publish("Batch timing error", NULL, PRIVATE);
+    //            break;
+    //}
 
     I2C_sensors_finished = false;
     ONEWIRE_sensors_finished = false; 
     // only two of these strings can fit in the 255 bytes that Particle.publish is limited to.
     // Figure out how to fit more data in a single publish!  --oh, oh, I know! DeviceOS v0.8.0 supports up to 622 bytes of data!
     //sprintf(googleString, "{\"ts0\":%ld,\"L0\":%.0f,\"wT0\":%.2f,\"gT0\":%.2f,\"hT0\":%.2f,\"aT0\":%.2f,\"aH0\":%.0f,\"ts1\":%ld,\"L1\":%.0f,\"wT1\":%.2f,\"gT1\":%.2f,\"hT1\":%.2f,\"aT1\":%.2f,\"aH1\":%.0f}", ts0, L0, wT0, gT0, hT0, aT0, aH0, ts1, L1, wT1, gT1, hT1, aT1, aH1);
-    
+
     Particle.connect();
     if (waitFor(Particle.connected, 300000)) {
         Particle.process();
@@ -1134,8 +1202,14 @@ void loop()
     }
         
     if (Particle.publish("sensor_data_toGCP", googleString, 60, PRIVATE, WITH_ACK)) {
-            set_wake_time();
             Serial.print("sensor_data_toGCP published successfully");
+
+            checkSolarConditions();
+            batteryReading12v = 0;  // reset 12v battery reading to make sure we get no false positives when battery is actually drained
+
+            solarHeaterCYCLE();
+
+            set_wake_time();
             Serial.println("  ...Going to Sleep");
             /*
             if ((Time.hour() == 10) && (currentTens_place == 0)) {
@@ -1194,8 +1268,8 @@ void loop()
                   break;
           }
 
-          //float batteryVoltage12v = ((read12vBatteryVoltage() / 4095) *  //14.2); // Would need to determine exact voltages of battery for the given divider and analog input.
-          float batteryReading12v = read12vBatteryVoltage();
+          //int batteryVoltage12v = ((read12vBatteryVoltage() / 4095) *  //14.2); // Would need to determine exact voltages of battery for the given divider and analog input.
+          batteryReading12v = read12vBatteryVoltage();
 
            switch (currentTens_place) {
                 case 0: bV12_0 = batteryReading12v;
@@ -1216,7 +1290,7 @@ void loop()
           ONEWIRE_sensors_finished = false;
           
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
-          if (batteryReading12v > 2700 && lux > 1000) { // ~13.0v with diode-skewed GND
+          if (batteryReading12v > 2700 && lux > 600) { // ~13.0v with diode-skewed GND
               delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
               turnONsolarHeater();
               Particle.publish("debug turnONsolarHeater", PRIVATE);
@@ -1225,9 +1299,10 @@ void loop()
               Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
           }
           //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ~12.0v
-          if (batteryReading12v < 2400 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
+          if (batteryReading12v < 2400 || lux < 500 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
               turnOFFsolarHeater();
           }
+          batteryReading12v = 0;
 
           if (testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
               // THIS MIGHT BE BETTER AS A SERIES OF FOR LOOPS TO LIMIT THE CHANCE FOR BLOCKING
@@ -1248,13 +1323,16 @@ void loop()
               }
           }
 
+          solarHeaterCYCLE();
+
+          /**************** MOVED TO solarHeaterCYCLE() ********************
           while (solarHeaterON == true && solarHeaterPAUSE == false) {
               //Particle.process();
               /******** DEBUG CODE **********
               Particle.publish("debug YOU HAVE REACHED THE WHILE LOOP", PRIVATE);
               Particle.process();
               delay(5000);
-              // ****** END DEBUG CODE ********/
+              // ****** END DEBUG CODE ******** //
               if (!pause_for_Sensors_Timer.isActive()) {
                   set_wake_time();
                   if (wakeSeconds < 60) {
@@ -1416,7 +1494,7 @@ void loop()
                           delay(1000);
                           // ****** END DEBUG CODE ********
                       }
-                      **********************************************/
+                      ********************************************** //
                   } else if (debug_supercap_charger_Timer_is_running == true) { //DEBUG SupercapCharger.isActive() not evaluating correctly
                       // ******** DEBUG CODE **********
                       Particle.publish("debug SupercapCharger.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
@@ -1467,7 +1545,7 @@ void loop()
                       delay(1000);
                       // ****** END DEBUG CODE ********
                   }
-                  ********END DEBUG REMOVAL**********/
+                  ********END DEBUG REMOVAL********** //
               }
 
               if (debug_battery_recovery_Timer_is_running == true) {
@@ -1636,7 +1714,7 @@ void loop()
                   // turn on high power heater, connected to D7
                   int priorReading12vBattery = analogRead(vDividerREADpin);
                   long start_of_solarHeaterMillis = millis();
-              }*/
+              }*/ /*
               Particle.process();
               //digitalWrite(relay3pin, HIGH);
               //digitalWrite(relay2pin), HIGH);
@@ -1649,6 +1727,7 @@ void loop()
               // END DEBUG CODE
           }
           solarHeaterPAUSE = false;
+          */
 
           Particle.connect();
           if (waitFor(Particle.connected, 300000)) {
@@ -1681,6 +1760,461 @@ void loop()
 
   }
 
+}
+
+void checkSolarConditions() {
+    //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
+    if (batteryReading12v > 2700 && lux > 600) { // ~13.0v with diode-skewed GND
+        delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
+        turnONsolarHeater();
+        Particle.publish("debug turnONsolarHeater", PRIVATE);
+        delay(4000); // DEBUG rest period to make sure any .publish calls from turn ON process go through
+    } else if (lux == 0.00) {
+        Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
+    }
+    //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ~12.0v
+    if (batteryReading12v < 2400 || lux < 500 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
+        turnOFFsolarHeater();
+    }
+
+    if (testingSolarCharger == true || testingLowLight == true || testingLowBattery == true) {
+        // THIS MIGHT BE BETTER AS A SERIES OF FOR LOOPS TO LIMIT THE CHANCE FOR BLOCKING
+        while (testingSolarTimer.isActive()) {
+            // ******** DEBUG CODE **********
+            delay(1000);
+            Particle.publish("testingSolarTimer.isActive", PRIVATE);
+            Particle.process();
+            delay(1000);
+            // ****** END DEBUG CODE ********
+            Particle.process();
+        }
+        while (testingLowLightTimer.isActive()) {
+            Particle.process();
+        }
+        while (testingLowBatteryTimer.isActive()) {
+            Particle.process();
+        }
+    }
+}
+
+void solarHeaterCYCLE() {
+    while (solarHeaterON == true && solarHeaterPAUSE == false) {
+              //Particle.process();
+              /******** DEBUG CODE **********
+              Particle.publish("debug YOU HAVE REACHED THE WHILE LOOP", PRIVATE);
+              Particle.process();
+              delay(5000);
+              // ****** END DEBUG CODE ********/
+              if (!pause_for_Sensors_Timer.isActive()) {
+                  set_wake_time();
+                  if (wakeSeconds < 60) {
+                      Particle.publish("Not enough time to start Solar Heating Period, going to sleep", PRIVATE);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      break;
+                  }
+                  pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000);
+                  Particle.publish("Solar Heating Period starting. Time remaining:", String(wakeSeconds - 60), PRIVATE);
+                  // ******** DEBUG CODE **********
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
+              }
+
+              if (flag_transition_from_Supercap_Charger_to_Solar_Heater == true) {
+                  flag_transition_from_Supercap_Charger_to_Solar_Heater = false;
+                  debug_supercap_charger_Timer_is_running = false;
+                  delay(1000); // if Battery Recovery was just called, the Solar Heater relay may not be done switching
+                  digitalWrite(relay2pin, LOW);
+                  delay(1000);
+                  digitalWrite(relay3pin, LOW);
+                  delay(200); // let relay connections break before connecting high current load
+                  SolarHeaterTimer.start();
+                  debug_solar_heater_Timer_is_running = true;
+                  digitalWrite(relay1pin, HIGH);
+                  // turn on high power heater, connected to D7
+                  int priorReading12vBattery = analogRead(vDividerREADpin);
+                  Particle.publish("Supercapacitor Charging timed out.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), priorReading12vBattery), PRIVATE);
+                  // ******** DEBUG CODE **********
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
+                  continue;
+              }
+
+              if (flag_transition_from_Solar_Heater_to_Battery_Recovery == true) {
+                  flag_transition_from_Solar_Heater_to_Battery_Recovery = false;
+                  debug_solar_heater_Timer_is_running = false;
+                  int lowestReading12vBattery = analogRead(vDividerREADpin);
+                  digitalWrite(relay1pin, LOW);
+                  //delay(100);
+                  //if (lowestReading12vBattery < 3250) {
+                  if (lowestReading12vBattery < 2150) { // ??? 11.5v ??? with diode-skewed GND
+                    Particle.publish("12v battery voltage low under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
+                    // ******** DEBUG CODE **********
+                    Particle.process();
+                    delay(1000);
+                    // ****** END DEBUG CODE ********
+                  }
+                  BatteryRecoveryTimer.start();
+                  debug_battery_recovery_Timer_is_running = true;
+                  Particle.publish("Solar Heater timed out. Starting Battery Recovery.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE);
+                  // ******** DEBUG CODE **********
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
+                  continue;
+              }
+
+              if (flag_transition_from_Battery_Recovery_out == true) {
+                  flag_transition_from_Battery_Recovery_out = false;
+                  debug_battery_recovery_Timer_is_running = false;
+                  minimum_battery_recovery_Duration = false;
+                  int highestReading12vBattery = analogRead(vDividerREADpin);
+                  //if (highestReading12vBattery < 3400) {
+                  if (highestReading12vBattery < 3850) { // <13.0v with diode-skewed GND
+                      Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
+                      reset_BatteryRecoveryTimer = true;
+                  }
+              }
+              
+
+              int currentReading12vBattery = analogRead(vDividerREADpin);
+              //if (currentReading12vBattery < 3200) { // ~12.0v
+              if (currentReading12vBattery < 1950) { // ??? 11.5v ??? with diode-skewed GND // DEBUG this shouldn't have triggered...
+                  digitalWrite(relay1pin, LOW);
+                  delay(500);
+                  digitalWrite(relay2pin, LOW);
+                  delay(500);
+                  digitalWrite(relay3pin, LOW);
+                  pause_for_Sensors_Timer.dispose();
+                  SupercapChargerTimer.dispose();
+                  debug_supercap_charger_Timer_is_running = false;
+                  SolarHeaterTimer.dispose();
+                  debug_solar_heater_Timer_is_running = false;
+                  BatteryRecoveryTimer.dispose();
+                  debug_battery_recovery_Timer_is_running = false;
+                  //debugging publish, remove if this works:
+                  Particle.publish("Very low battery under load from Solar Heater", PRIVATE);
+                  // ******** DEBUG CODE **********
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********
+
+                  break;
+                  // this break uses the system.sleep below this while loop
+              } // else if (currentReading12vBattery > 3400) {}
+
+              if (reset_BatteryRecoveryTimer == true) {
+                  reset_BatteryRecoveryTimer = false;
+                  BatteryRecoveryTimer.reset();
+                  debug_battery_recovery_Timer_is_running = true;
+              }
+
+              if (debug_solar_heater_Timer_is_running == false && debug_battery_recovery_Timer_is_running == false) { // DEBUG !SolarHeaterTimer.isActive() and !BatteryRecoveryTimer.isActive() were not evaluating correctly
+                  if (debug_supercap_charger_Timer_is_running == false) { // DEBUG !SupercapChargerTimer.isActive() was not evaluating correctly
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, NO_ACK);
+                      Particle.process();
+                      delay(4000);
+                      // ****** END DEBUG CODE ********
+                      digitalWrite(relay3pin, HIGH);
+                      delay(1000);
+                      digitalWrite(relay2pin, HIGH);
+                      SupercapChargerTimer.start();
+                      debug_supercap_charger_Timer_is_running = true;
+                      delay(200); // avoid reading the peak current into supercapacitor with INA219
+                      Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      continue;
+                  } else if (ina219.getCurrent_mA() < 600 && ina219.getCurrent_mA() > -500) {
+                      digitalWrite(relay2pin, LOW);
+                      delay(1000);
+                      digitalWrite(relay3pin, LOW);
+                      SupercapChargerTimer.dispose();
+                      debug_supercap_charger_Timer_is_running = false;
+                      delay(1000); // allow relay connection to break before connecting large load
+                      SolarHeaterTimer.start();
+                      debug_solar_heater_Timer_is_running = true;
+                      digitalWrite(relay1pin, HIGH);
+                      // turn on high power heater, connected to D7
+                      //int priorReading12vBattery = analogRead(vDividerREADpin); // unused variable was throwing a makeError in compiler
+                      Particle.publish("Solar Heating Element STARTED. Supercapacitor current(mA)", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(3000);
+                      // ****** END DEBUG CODE ********
+                      continue;
+                      /********************************************* // Moved into else/if statement
+                      if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) { // DEBUG need to figure out wiring of relays
+                          digitalWrite(relay2pin, LOW);
+                          delay(1000);
+                          digitalWrite(relay3pin, LOW);
+                          SupercapChargerTimer.dispose();
+                          delay(1000); // allow relay connection to break before connecting large load
+                          SolarHeaterTimer.start();
+                          digitalWrite(relay1pin, HIGH);
+                          // turn on high power heater, connected to D7
+                          int priorReading12vBattery = analogRead(vDividerREADpin);
+                          Particle.publish("Solar Heating Element STARTED. Supercapacitor current(mA)", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
+                      }
+                      **********************************************/
+                  } else if (debug_supercap_charger_Timer_is_running == true) { //DEBUG SupercapCharger.isActive() not evaluating correctly
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug SupercapCharger.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                      //Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      continue;
+                  } else {
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug ERROR in Supercapacitor Charger Timer loop", PRIVATE, WITH_ACK);
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      continue;
+                  }
+                  /******** DEBUG REMOVE AND PLACE IN ! (NOT) conditional *********
+                  if (SupercapChargerTimer.isActive()) {
+                      if (ina219.getCurrent_mA() > -300) {  // DEBUG this may need to be reversed " < 300"
+                          digitalWrite(relay2pin, LOW);
+                          delay(1000);
+                          digitalWrite(relay3pin, LOW);
+                          SupercapChargerTimer.dispose();
+                          delay(1000); // allow relay connection to break before connecting large load
+                          SolarHeaterTimer.start();
+                          digitalWrite(relay1pin, HIGH);
+                          // turn on high power heater, connected to D7
+                          int priorReading12vBattery = analogRead(vDividerREADpin);
+                          Particle.publish("Solar Heating Element STARTED. Supercapacitor current(mA)", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
+                      }
+                  } else {
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, NO_ACK);
+                      Particle.process();
+                      delay(5000);
+                      // ****** END DEBUG CODE ********
+                      digitalWrite(relay3pin, HIGH);
+                      delay(1000);
+                      digitalWrite(relay2pin, HIGH);
+                      SupercapChargerTimer.start();
+                      delay(500); // avoid reading the peak current into supercapacitor with INA219
+                      Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                  }
+                  ********END DEBUG REMOVAL**********/
+              }
+
+              if (debug_battery_recovery_Timer_is_running == true) {
+                  //if (currentReading12vBattery > 3775) { // >13.5v
+                  if (currentReading12vBattery > 3950 && minimum_battery_recovery_Duration == false) { // ???>13.9v??? with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
+                      if (ina219.getBusVoltage_V() > 2.0) {
+                          delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
+                          BatteryRecoveryTimer.dispose();
+                          debug_battery_recovery_Timer_is_running = false;
+                          SolarHeaterTimer.start();
+                          debug_solar_heater_Timer_is_running = true;
+                          digitalWrite(relay1pin, HIGH);
+                          // turn on high power heater, connected to D7
+                          //delay(200); // Read voltage drop under load
+                          int priorReading12vBattery = analogRead(vDividerREADpin); // unused variable was throwing a makeError in compiler
+                          Particle.publish("Supercapacitor & Battery CHARGED. Solar Heating Element STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), priorReading12vBattery), PRIVATE, NO_ACK);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
+                          continue;
+                      } else {
+                          delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
+                          BatteryRecoveryTimer.dispose();
+                          debug_battery_recovery_Timer_is_running = false;
+                          digitalWrite(relay3pin, HIGH);
+                          delay(1000);
+                          digitalWrite(relay2pin, HIGH);
+                          SupercapChargerTimer.start();
+                          debug_supercap_charger_Timer_is_running = true;
+                          delay(200); // avoid reading the peak current into supercapacitor with INA219
+                          Particle.publish("Battery Recovery complete. Supercapacitor Charger ON.", String::format("{\"Supercapacitor_Current\":%f,\"12vBattery_Voltage\":%d}", ina219.getCurrent_mA(), currentReading12vBattery), PRIVATE, NO_ACK);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
+                      }
+                  } else {
+                      Particle.publish("debug Battery Recovering. 12v Battery Voltage:", String(currentReading12vBattery), PRIVATE, NO_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                  }
+              }
+
+              if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
+                  //if (currentReading12vBattery < 3350) { // ~12.5v
+                  if (currentReading12vBattery < 2100) { // ???~12.0v??? with diode-skewed GND
+                      int lowestReading12vBattery = analogRead(vDividerREADpin);
+                      digitalWrite(relay1pin, LOW);
+                      SolarHeaterTimer.dispose();
+                      debug_solar_heater_Timer_is_running = false;
+                      //delay(100);
+                      //if (lowestReading12vBattery < 3250) { // ~12.2v
+                      if (lowestReading12vBattery < 1950) { // ???~11.5v??? with diode-skewed GND
+                          //debugging publish, remove if this works:
+                          Particle.publish("Very Low battery under load from Solar Heater.", String(lowestReading12vBattery), PRIVATE);
+                          // ******** DEBUG CODE **********
+                          Particle.process();
+                          delay(1000);
+                          // ****** END DEBUG CODE ********
+
+                          break;
+                          // this break uses the system.sleep below this while loop
+                      }
+                      BatteryRecoveryTimer.start();
+                      debug_battery_recovery_Timer_is_running = true;
+                      minimum_battery_recovery_Duration = true;
+                      Particle.publish("12v Battery LOW. Battery Recovery STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      continue;
+                  /*} else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -100) {
+                      int lowestReading12vBattery = analogRead(vDividerREADpin);
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      //delay(1000); // if relays just switched they may not have demagnetized yet
+                      digitalWrite(relay1pin, LOW);
+                      SolarHeaterTimer.dispose();
+                      debug_solar_heater_Timer_is_running = false;
+                      delay(1000);
+                      digitalWrite(relay3pin, HIGH);
+                      delay(1000);
+                      digitalWrite(relay2pin, HIGH);
+                      SupercapChargerTimer.start();
+                      debug_supercap_charger_Timer_is_running = true;
+                      delay(200); // avoid reading the peak current into supercapacitor with INA219
+                      Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      continue;
+                      */
+                  } else if (ina219.getBusVoltage_V() < 0.5) {
+                      int lowestReading12vBattery = analogRead(vDividerREADpin);
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug Supercapacitor Voltage is LOW. Battery Recovery STARTED.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                      //delay(1000); // if relays just switched they may not have demagnetized yet
+                      digitalWrite(relay1pin, LOW);
+                      SolarHeaterTimer.dispose();
+                      debug_solar_heater_Timer_is_running = false;
+                      BatteryRecoveryTimer.start();
+                      debug_battery_recovery_Timer_is_running = true;
+                      continue;
+                  } else {
+                      // ******** DEBUG CODE **********
+                      Particle.publish("debug SolarHeater.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                      Particle.process();
+                      delay(1000);
+                      // ****** END DEBUG CODE ********
+                  }
+              }
+              
+
+              //long currentMillis = millis();
+              /*if (currentMillis - start_of_supercap_chargeMillis > Supercap_Charging_Period) {
+                  digitalWrite(relay2pin, LOW);
+                  digitalWrite(relay3pin, LOW);
+                  delay(100);
+                  digitalWrite(relay1pin, HIGH);
+                  // turn on high power heater, connected to D7
+                  int priorReading12vBattery = analogRead(vDividerREADpin);
+                  long start_of_solarHeaterMillis = millis();
+              }*/
+              /*if (currentMillis - start_of_solarHeaterMillis > MAX_SolarHeater_ON_Time) {
+                  digitalWrite(relay1pin, LOW);
+                  delay(100);
+                  int lowestReading12vBattery = analogRead(vDividerREADpin);
+                  long start_of_RecoveryPeriodMillis = millis();
+                  if (lowestReading12vBattery < 3250) {
+                      break;
+                  }
+                  //return;
+              }*/
+              /*if (currentMillis - start_of_RecoveryPeriodMillis > Battery12v_Recovery_Period) {
+                  int highestReading12vBattery = analogRead(vDividerREADpin);
+                  if (highestReading12vBattery < 3475) {
+                      Particle.process();
+                      delay(5000);
+                  }
+                  if (highestReading12vBattery > 3475) {
+                      digitalWrite(relay3pin, HIGH);
+                      digitalWrite(relay2pin, HIGH);
+                      long start_of_supercap_chargeMillis = millis();
+                  } else {
+                      break;
+                  }
+                  //digitalWrite(relay3pin, HIGH);
+                  //digitalWrite(relay2pin, HIGH);
+                  //start_of_supercap_chargeMillis = millis();
+              }*/
+              /*if (lowestReading12vBattery < 3375 || analogRead(vDividerREADpin) < 3375) {
+                  digitalWrite(relay1pin, LOW);
+                  delay(100);
+                  digitalWrite(relay3pin, HIGH);
+                  digitalWrite(relay2pin, HIGH);
+                  long start_of_supercap_chargeMillis = millis();
+              }*/
+              /*if (ina219.getCurrent_mA() > 2500 || ina219.getCurrent_mA() < -2500) {
+                  continue;
+              }*/
+              /*if (currentMillis - start_of_supercap_chargeMillis < Supercap_Charging_Period && ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+                  //float busvoltage = 0;
+                  //float current_mA = 0;
+                  //busvoltage = ina219.getBusVoltage_V();
+                  //current_mA = ina219.getCurrent_mA();
+                  digitalWrite(relay2pin, LOW);
+                  digitalWrite(relay3pin, LOW);
+                  delay(100);
+                  digitalWrite(relay1pin, HIGH);
+                  // turn on high power heater, connected to D7
+                  int priorReading12vBattery = analogRead(vDividerREADpin);
+                  long start_of_solarHeaterMillis = millis();
+              }*/
+              Particle.process();
+              //digitalWrite(relay3pin, HIGH);
+              //digitalWrite(relay2pin), HIGH);
+          }
+          if (solarHeaterPAUSE == true) {
+              Particle.publish("Solar Heater PAUSED for Sensor Reading", String(ina219.getBusVoltage_V()), PRIVATE);
+              // DEBUG CODE
+              Particle.process();
+              delay(1000);
+              // END DEBUG CODE
+          }
+          solarHeaterPAUSE = false;
 }
 
 void printDebugInfo() {
