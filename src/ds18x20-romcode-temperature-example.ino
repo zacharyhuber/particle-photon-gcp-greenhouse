@@ -479,19 +479,11 @@ void initialize_solar_heater_relays() {
     digitalWrite(vDividerOFFpin, LOW);
 }
 
-<<<<<<< HEAD
 const int Time_for_SolarHeater_ON = 15; //9:00 AM CST (3:00 PM UTC)
 const int Time_for_SolarHeater_OFF = 23; //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
 const int MAX_SolarHeater_ON_Time = 240000; // in millis
 const int Supercap_Charging_Period = 240000; // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 const int Battery12v_Recovery_Period = 120000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
-=======
-#define Time_for_SolarHeater_ON 15 //9:00 AM CST (3:00 PM UTC)
-#define Time_for_SolarHeater_OFF 23 //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
-#define MAX_SolarHeater_ON_Time 240000 // in millis
-#define Supercap_Charging_Period 120000 // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
-#define Battery12v_Recovery_Period 60000 // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
->>>>>>> adjustable-publish-frequency
 
 bool testingSolarCharger = false;
 bool testingLowBattery = false;
