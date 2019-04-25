@@ -486,6 +486,7 @@ const int Supercap_Charging_Period = 240000; // in millis THIS SHOULD BE REPLACE
 const int Battery12v_Recovery_Period = 120000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 
 bool testingSolarCharger = false;
+bool test_of_Solar_Charger_failed = false;
 bool testingLowBattery = false;
 bool testingLowLight = false;
 bool solarHeaterON = false;
@@ -504,13 +505,14 @@ void test_of_Solar_Charger() {
         // Serial.println("Solar Heater ON"); // ***DEBUG Serial and Particle.publish calls will crash the application code in Timer callback functions*** 
         
     } else {
-        Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
+        test_of_Solar_Charger_failed = true;
+        //Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
         //Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
         //delay(4000); // DEBUG
-        digitalWrite(vDividerOFFpin, HIGH);
-        delay(200);
-        digitalWrite(vDividerOFFpin, LOW);
-        delay(500);
+        //digitalWrite(vDividerOFFpin, HIGH);
+        //delay(200);
+        //digitalWrite(vDividerOFFpin, LOW);
+        //delay(500);
     }
 }
 Timer testingSolarTimer(10000, test_of_Solar_Charger, true); // Should maybe have two or three timers with success flags for each.
@@ -1307,6 +1309,16 @@ void loop()
                   // ****** END DEBUG CODE ********
                   Particle.process();
               }
+              if (test_of_Solar_Charger_failed == true) {
+                  Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
+                  //Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
+                  //delay(4000); // DEBUG
+                  digitalWrite(vDividerOFFpin, HIGH);
+                  delay(200);
+                  digitalWrite(vDividerOFFpin, LOW);
+                  delay(500);
+                  test_of_Solar_Charger_failed = false;
+              }
               while (testingLowLightTimer.isActive()) {
                   Particle.process();
               }
@@ -1780,6 +1792,16 @@ void checkSolarConditions() {
             // ****** END DEBUG CODE ********
             Particle.process();
         }
+        if (test_of_Solar_Charger_failed == true) {
+            Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
+            //Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
+            //delay(4000); // DEBUG
+            digitalWrite(vDividerOFFpin, HIGH);
+            delay(200);
+            digitalWrite(vDividerOFFpin, LOW);
+            delay(500);
+            test_of_Solar_Charger_failed = false;
+        }
         while (testingLowLightTimer.isActive()) {
             Particle.process();
         }
@@ -2011,7 +2033,7 @@ void solarHeaterCYCLE() {
                       // ****** END DEBUG CODE ********
                   }
                   ********END DEBUG REMOVAL**********/
-              }
+              
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
