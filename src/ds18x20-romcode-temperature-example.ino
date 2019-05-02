@@ -493,7 +493,7 @@ bool solarHeaterON = false;
 
 void test_of_Solar_Charger() {
     //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
-    if (analogRead(vDividerREADpin) > 3600) { // ~13.4v with diode-skewed GND
+    if (analogRead(vDividerREADpin) > 2800) { // ~13.4v with diode-skewed GND
 
         testingSolarCharger = false;
         solarHeaterON = true;
@@ -1310,7 +1310,7 @@ void loop()
                   Particle.process();
               }
               if (test_of_Solar_Charger_failed == true) {
-                  Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
+                  Particle.publish("debug test_of_Solar_Charger failed", String(batteryReading12v), PRIVATE);
                   //Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
                   //delay(4000); // DEBUG
                   digitalWrite(vDividerOFFpin, HIGH);
@@ -1318,6 +1318,7 @@ void loop()
                   digitalWrite(vDividerOFFpin, LOW);
                   delay(500);
                   test_of_Solar_Charger_failed = false;
+                  testingSolarCharger = false;
               }
               while (testingLowLightTimer.isActive()) {
                   Particle.process();
@@ -1793,7 +1794,7 @@ void checkSolarConditions() {
             Particle.process();
         }
         if (test_of_Solar_Charger_failed == true) {
-            Particle.publish("debug test_of_Solar_Charger failed", PRIVATE);
+            Particle.publish("debug test_of_Solar_Charger failed", String(batteryReading12v), PRIVATE);
             //Particle.process();  // just to make sure. REMOVE IF PUBLISH WORKS
             //delay(4000); // DEBUG
             digitalWrite(vDividerOFFpin, HIGH);
@@ -1801,6 +1802,7 @@ void checkSolarConditions() {
             digitalWrite(vDividerOFFpin, LOW);
             delay(500);
             test_of_Solar_Charger_failed = false;
+            testingSolarCharger = false;
         }
         while (testingLowLightTimer.isActive()) {
             Particle.process();
@@ -2080,6 +2082,10 @@ void solarHeaterCYCLE() {
               }
 
               if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
+                  delay(1000);
+                  Particle.publish("debug You have reached the Solar Heater running code of while loop", PRIVATE); //DEBUG
+                  Particle.process();
+                  delay(1000);
                   //if (currentReading12vBattery < 3350) { // ~12.5v
                   if (currentReading12vBattery < 2100) { // ???~12.0v??? with diode-skewed GND
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
@@ -2229,6 +2235,7 @@ void solarHeaterCYCLE() {
               // END DEBUG CODE
           }
           solarHeaterPAUSE = false;
+    }
 }
 
 void printDebugInfo() {
