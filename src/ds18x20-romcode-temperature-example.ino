@@ -1841,12 +1841,22 @@ void solarHeaterCYCLE() {
 
               if (flag_transition_from_Supercap_Charger_to_Solar_Heater == true) {
                   flag_transition_from_Supercap_Charger_to_Solar_Heater = false;
+                  // ******** DEBUG CODE **********
+                  Particle.publish("debug STOPPING SUPERCAPACITOR CHARGER", PRIVATE);
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********/
                   debug_supercap_charger_Timer_is_running = false;
                   delay(1000); // if Battery Recovery was just called, the Solar Heater relay may not be done switching
                   digitalWrite(relay2pin, LOW);
                   delay(1000);
                   digitalWrite(relay3pin, LOW);
                   delay(200); // let relay connections break before connecting high current load
+                  // ******** DEBUG CODE **********
+                  Particle.publish("debug STARTING SOLAR HEATER", PRIVATE);
+                  Particle.process();
+                  delay(1000);
+                  // ****** END DEBUG CODE ********/
                   SolarHeaterTimer.start();
                   debug_solar_heater_Timer_is_running = true;
                   digitalWrite(relay1pin, HIGH);
@@ -2035,7 +2045,7 @@ void solarHeaterCYCLE() {
                       // ****** END DEBUG CODE ********
                   }
                   ********END DEBUG REMOVAL**********/
-              
+              }
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
@@ -2082,10 +2092,11 @@ void solarHeaterCYCLE() {
               }
 
               if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
-                  delay(1000);
-                  Particle.publish("debug You have reached the Solar Heater running code of while loop", PRIVATE); //DEBUG
+                  // ******** DEBUG CODE **********
+                  Particle.publish("debug You have reached the Solar Heater running code of while loop", String(currentReading12vBattery), PRIVATE, NO_ACK); //DEBUG
                   Particle.process();
                   delay(1000);
+                  // ****** END DEBUG CODE ********
                   //if (currentReading12vBattery < 3350) { // ~12.5v
                   if (currentReading12vBattery < 2100) { // ???~12.0v??? with diode-skewed GND
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
@@ -2226,16 +2237,15 @@ void solarHeaterCYCLE() {
               Particle.process();
               //digitalWrite(relay3pin, HIGH);
               //digitalWrite(relay2pin), HIGH);
-          }
-          if (solarHeaterPAUSE == true) {
-              Particle.publish("Solar Heater PAUSED for Sensor Reading", String(ina219.getBusVoltage_V()), PRIVATE);
-              // DEBUG CODE
-              Particle.process();
-              delay(1000);
-              // END DEBUG CODE
-          }
-          solarHeaterPAUSE = false;
-    }
+      }
+      if (solarHeaterPAUSE == true) {
+          Particle.publish("Solar Heater PAUSED for Sensor Reading", String(ina219.getBusVoltage_V()), PRIVATE);
+          // DEBUG CODE
+          Particle.process();
+          delay(1000);
+          // END DEBUG CODE
+      }
+      solarHeaterPAUSE = false;
 }
 
 void printDebugInfo() {
