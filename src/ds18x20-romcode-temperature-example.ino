@@ -2049,7 +2049,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3950 && minimum_battery_recovery_Duration == false) { // ???>13.9v??? with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
+                  if (currentReading12vBattery > 3950 && minimum_battery_recovery_Duration == false) { // TESTED! = 13.8v with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
