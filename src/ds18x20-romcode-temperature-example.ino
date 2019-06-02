@@ -208,19 +208,11 @@ D5 - 1-wire power, ditto ground comment.
 DS18 sensor(D6);
     //=========================================================================
 
-
-/*
-I/O setup:
-These made it easy to just 'plug in' my I2C sensors
-
-D2 - I2C ground, or just use regular pin and comment out below.
-D3 - I2C power, ditto ground comment.
-*/
-#include "Adafruit_HDC1000.h"
-
-Adafruit_HDC1000 hdc = Adafruit_HDC1000();
     //=========================================================================
+#include "math.h"
+#include "adafruit-sht31.h"
 
+Adafruit_SHT31 sht31 = Adafruit_SHT31();
     //=========================================================================
 
 #include "adafruit-ina219.h"
@@ -792,14 +784,12 @@ void setup()
 
 
 
-  Serial.println("HDC100x test");
+  Serial.println("SHT31 test");
 
-  if(!hdc.begin())
-  {
-      Serial.print("No HDC1000 detected ...  Check your wiring or I2C ADDR!");
-      Particle.publish("No HDC1000 detected ...  Check your wiring or I2C ADDR!", PRIVATE);
+  if (! sht31.begin(0x44)) {   // Set to 0x45 for alternate i2c addr
+    Serial.println("Couldn't find SHT31");
+    Particle.publish("Ooops, no SHT31 detected ... Check your wiring or I2C ADDR!", PRIVATE); //REMOVE FROM setup() for SEMI-AUTOMATIC particle.connect control
   }
-  delay(15);    // let the chip initialize
 
 
   if (!Time.isValid()) {
@@ -889,20 +879,24 @@ void loop()
                     break;
       }
 
-      // Individual Temp/Humidity calls
-      //Serial.print("Temp: "); Serial.print(hdc.readTemperature());
-      //Serial.print("\t\tHum: "); Serial.println(hdc.readHumidity());
+      ambientTempC = sht31.readTemperature();
+      ambientHumidity = sht31.readHumidity();
+      ambientTempF = (ambientTempC* 9) /5 + 32;
 
-      //read Temp and Humidity from HDC1008 on I2C bus with a single read
-      hdc.ReadTempHumidity();     // one conversion, one read version
-      ambientTempF = hdc.GetTemperature() * 1.8 + 32.0;
-      ambientHumidity = hdc.GetHumidity();
-      Serial.print("\tAmbientTempC: "); Serial.print(hdc.GetTemperature());
-      Serial.print("\tAmbientTempF: "); Serial.print(ambientTempF);
-      Serial.print("\tAmbientHumidity: "); Serial.print(hdc.GetHumidity());
-      Serial.print("\tBatteryLOW: ");
-      if (hdc.batteryLOW()) Serial.println("TRUE");
-      else Serial.println("FALSE");
+      if (! isnan(ambientTempC)) {  // check if 'is not a number'
+         //Temperature in C
+        Serial.print("Temp *C = "); Serial.println(ambientTempC);
+        //Temperature in F
+        Serial.print("Temp *F = "); Serial.println(ambientTempF);
+      } else { 
+        Serial.println("Failed to read temperature");
+      }
+
+      if (! isnan(ambientHumidity)) {  // check if 'is not a number'
+        Serial.print("Hum. % = "); Serial.println(ambientHumidity);
+      } else { 
+        Serial.println("Failed to read humidity");
+      }
 
       //~photon code~Particle.publish("ambientTempF & ambientHumidity", String(ambientTempF) + String(ambientHumidity), 60, PRIVATE);
 
