@@ -1988,6 +1988,25 @@ void solarHeaterCYCLE() {
                           // ****** END DEBUG CODE ********
                       }
                       **********************************************/
+                  } else if (ina219.getBusVoltage_V() > 2) {
+                      digitalWrite(relay2pin, LOW);
+                      delay(1000);
+                      digitalWrite(relay3pin, LOW);
+                      SupercapChargerTimer.dispose();
+                      debug_supercap_charger_Timer_is_running = false;
+                      delay(1000); // allow relay connection to break before connecting large load
+                      SolarHeaterTimer.start();
+                      debug_solar_heater_Timer_is_running = true;
+                      digitalWrite(relay1pin, HIGH);
+                      // turn on high power heater, connected to D7
+                      //int priorReading12vBattery = analogRead(vDividerREADpin); // unused variable was throwing a makeError in compiler
+                      Particle.publish("max Supercap Voltage reached. Solar Heating Element STARTED. Supercapacitor voltage:", String(ina219.getBusVoltage_V()), PRIVATE, NO_ACK);
+                      // ******** DEBUG CODE **********
+                      Particle.process();
+                      delay(3000);
+                      // ****** END DEBUG CODE ********
+                      continue;
+                      
                   } else if (debug_supercap_charger_Timer_is_running == true) { //DEBUG SupercapCharger.isActive() not evaluating correctly
                       // ******** DEBUG CODE **********
                       Particle.publish("debug SupercapCharger.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
