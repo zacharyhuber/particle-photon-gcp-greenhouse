@@ -1988,7 +1988,7 @@ void solarHeaterCYCLE() {
                           // ****** END DEBUG CODE ********
                       }
                       **********************************************/
-                  } else if (ina219.getBusVoltage_V() > 2) {
+                  } else if (ina219.getBusVoltage_V() > 2.0) {
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
                       digitalWrite(relay3pin, LOW);
@@ -2006,7 +2006,7 @@ void solarHeaterCYCLE() {
                       delay(3000);
                       // ****** END DEBUG CODE ********
                       continue;
-                      
+
                   } else if (debug_supercap_charger_Timer_is_running == true) { //DEBUG SupercapCharger.isActive() not evaluating correctly
                       // ******** DEBUG CODE **********
                       Particle.publish("debug SupercapCharger.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
@@ -2106,9 +2106,9 @@ void solarHeaterCYCLE() {
 
               if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
                   // ******** DEBUG CODE **********
-                  Particle.publish("debug You have reached the Solar Heater running code of while loop", String(currentReading12vBattery), PRIVATE, NO_ACK); //DEBUG
-                  Particle.process();
-                  delay(1000);
+                  //Particle.publish("debug You have reached the Solar Heater running code of while loop", String(currentReading12vBattery), PRIVATE, NO_ACK); //DEBUG
+                  //Particle.process();
+                  //delay(1000);
                   // ****** END DEBUG CODE ********
                   //if (currentReading12vBattery < 3350) { // ~12.5v
                   if (currentReading12vBattery < 2100) { // ???~12.0v??? with diode-skewed GND
