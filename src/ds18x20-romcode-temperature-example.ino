@@ -606,6 +606,7 @@ Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Ch
 bool solarHeaterPAUSE = false;
 // call this Timer with pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000)
 void pauseSolarHeater() {
+    // DEBUG ************* Need to move code out of Timer callback!  *******************************************
     digitalWrite(relay1pin, LOW);
     digitalWrite(relay2pin, LOW);
     digitalWrite(relay3pin, LOW);
@@ -1018,6 +1019,12 @@ void loop()
   // This next block helps debug what's wrong.
   // It's not needed for the sensor to work properly
   } else {
+    if (sensor.crcError()) {
+        Particle.publish("debug ONEWIRE CRC ERROR, check wiring...", PRIVATE);
+        Particle.process();
+        delay(1000);
+        return; // Bail loop() to retry sensor.read()
+    }
     // Once all sensors have been read you'll get searchDone() == true
     // Next time read() is called the first sensor is read again
     if (sensor.searchDone()) {
@@ -1236,6 +1243,12 @@ void loop()
   }
 
   if (I2C_sensors_finished == true && ONEWIRE_sensors_finished == true) {
+          Particle.publish("debug Non-publish solar-heater/sleep code reached", PRIVATE);
+          // ******** DEBUG CODE **********
+          Particle.process();
+          delay(1000);
+          // ****** END DEBUG CODE ********
+
 
           //FuelGauge fuel; //Electron code
           //float batteryVoltage3v = fuel.getVCell(); //Electron code
