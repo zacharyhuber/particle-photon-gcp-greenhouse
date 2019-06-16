@@ -603,10 +603,13 @@ void transition_from_Supercap_Charger_to_Solar_Heater() {
 Timer SupercapChargerTimer(Supercap_Charging_Period, transition_from_Supercap_Charger_to_Solar_Heater, true);
 
 
+bool flag_solarHeater_needs_to_PAUSE = false;  // Timer callbacks are causing hard faults.  Move all logic to "while" loop.
 bool solarHeaterPAUSE = false;
 // call this Timer with pause_for_Sensors_Timer.changePeriod((wakeSeconds - 60) * 1000)
 void pauseSolarHeater() {
-    // DEBUG ************* Need to move code out of Timer callback!  *******************************************
+    flag_solarHeater_needs_to_PAUSE = true;
+    /*
+    // ************* Code moved out of Timer callback to "while" loop *************************
     digitalWrite(relay1pin, LOW);
     digitalWrite(relay2pin, LOW);
     digitalWrite(relay3pin, LOW);
@@ -620,6 +623,7 @@ void pauseSolarHeater() {
     delay(200);
     digitalWrite(vDividerOFFpin, LOW);
     solarHeaterPAUSE = true; // This should immediately break the while loop for the solarHeater
+    */
     //set_wake_time();
     //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
     //System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
@@ -1828,6 +1832,24 @@ void solarHeaterCYCLE() {
               Particle.process();
               delay(5000);
               // ****** END DEBUG CODE ********/
+              if (flag_solarHeater_needs_to_PAUSE == true) {
+                  flag_solarHeater_needs_to_PAUSE = false;
+                  digitalWrite(relay1pin, LOW);
+                  digitalWrite(relay2pin, LOW);
+                  digitalWrite(relay3pin, LOW);
+                  SupercapChargerTimer.dispose();
+                  debug_supercap_charger_Timer_is_running = false;
+                  SolarHeaterTimer.dispose();
+                  debug_solar_heater_Timer_is_running = false;
+                  BatteryRecoveryTimer.dispose();
+                  debug_battery_recovery_Timer_is_running = false;
+                  digitalWrite(vDividerOFFpin, HIGH);
+                  delay(200);
+                  digitalWrite(vDividerOFFpin, LOW);
+                  solarHeaterPAUSE = true; // This should immediately break the while loop for the solarHeater
+                  continue; // this should be unnecessary, but it's important the next if() statement does not run.
+              }
+
               if (!pause_for_Sensors_Timer.isActive()) {
                   set_wake_time();
                   if (wakeSeconds < 60) {
