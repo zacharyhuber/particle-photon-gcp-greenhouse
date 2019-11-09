@@ -1212,7 +1212,20 @@ void loop()
             checkSolarConditions();
             batteryReading12v = 0;  // reset 12v battery reading to make sure we get no false positives when battery is actually drained
 
-            solarHeaterCYCLE();
+            //~DEBUG~ ina219 bug introduced by OneWire error-catching retry code: current always reads -0.10.
+            if(ina219.getCurrent_mA() == -0.10) // This isn't how this should work...
+            {
+                Particle.publish("Testing INA219 current sensor", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                ina219.begin();
+                if(ina219.getCurrent_mA() == -0.10) {
+                    Particle.publish("Error in INA219 current sensor. Skipping solarHeaterCYCLE.", String(ina219.getCurrent_mA()), 60, PRIVATE, WITH_ACK);
+                } else {
+                    solarHeaterCYCLE();
+                }
+            } else {
+                solarHeaterCYCLE();
+            }
+            //~debug~solarHeaterCYCLE();
 
             set_wake_time();
             Serial.println("  ...Going to Sleep");
