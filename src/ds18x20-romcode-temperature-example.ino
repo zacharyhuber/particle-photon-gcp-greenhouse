@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(13);
+PRODUCT_VERSION(14);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -1033,7 +1033,13 @@ void loop()
     // Next time read() is called the first sensor is read again
     if (sensor.searchDone()) {
       Serial.println("No more addresses.");
-      ONEWIRE_sensors_finished = true;
+      // DEBUG simple fix to keep from .publish-ing until at least one Temp is recorded. It might be better to handle this immediately after reading sensors.
+      if (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0) {
+          Particle.publish("Error Reading OneWire Sensors", PRIVATE, NO_ACK);
+      } else {
+          ONEWIRE_sensors_finished = true;
+      }
+      //~debug~ONEWIRE_sensors_finished = true;
       // Avoid excessive printing when no sensors are connected
       delay(250);
 
