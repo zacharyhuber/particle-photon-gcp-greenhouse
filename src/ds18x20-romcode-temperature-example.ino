@@ -3,11 +3,11 @@
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
  * Date: Feb 21, 2019
- * Version: 0.2.1
+ * Version: 0.2.2
  */
 // Product ID and Version for Particle Product firmware deployment
-PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(14);
+PRODUCT_ID(9008); // Argon version using DeviceOS v1.2.1
+PRODUCT_VERSION(15);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -940,6 +940,7 @@ void loop()
       //LastReading = millis();
   }
 
+do {
   // Read the next available 1-Wire temperature sensor
   if (sensor.read()) {
     // Do something cool with the temperature
@@ -1027,19 +1028,21 @@ void loop()
         Particle.publish("debug ONEWIRE CRC ERROR, check wiring...", PRIVATE);
         Particle.process();
         delay(1000);
-        return; // Bail loop() to retry sensor.read()
+        continue; // skip to conditional "while" to retry sensor.read()
     }
     // Once all sensors have been read you'll get searchDone() == true
     // Next time read() is called the first sensor is read again
     if (sensor.searchDone()) {
       Serial.println("No more addresses.");
+      
+      /**************** TESTING do...while loop ******************
       // DEBUG simple fix to keep from .publish-ing until at least one Temp is recorded. It might be better to handle this immediately after reading sensors.
       if (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0) {
           Particle.publish("Error Reading OneWire Sensors", PRIVATE, NO_ACK);
       } else {
           ONEWIRE_sensors_finished = true;
-      }
-      //~debug~ONEWIRE_sensors_finished = true;
+      } *******************/
+      ONEWIRE_sensors_finished = true;
       // Avoid excessive printing when no sensors are connected
       delay(250);
 
@@ -1049,6 +1052,10 @@ void loop()
     }
   }
   Serial.println();
+
+} while ((ONEWIRE_sensors_finished == false) || (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0));  // TODO Needs to be updated as additional weather hardened sensors are added
+
+  
 
   /*
   if (I2C_sensors_finished == true && ONEWIRE_sensors_finished == true) {
@@ -1200,7 +1207,37 @@ void loop()
             Particle.process();
             while (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
                 delay(10000);
-                Particle.publish("debug OTA updating firmware", PRIVATE);  // This will probably not be published.  That would be good.
+                //**** DEBUG stuck in this section of code ********
+                if (ota_firmware_pending == true) {
+                    Particle.publish("debug: ota_firmware_pending", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(1000);
+                }
+                if (ota_firmware_updating == true) {
+                    Particle.publish("debug: ota_firmware_updating", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(1000);
+                }
+                if (ota_firmware_complete == true) {
+                    Particle.publish("debug: ota_firmware_complete", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(1000);
+                }
+                if (System.updatesPending()) {
+                    Particle.publish("debug: System.updatesPending", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(1000);
+                }
+                //Particle.publish("debug OTA updating firmware", PRIVATE);  // This will probably not be published.  That would be good.
+                
+                if (ota_firmware_complete == true) {
+                    delay(60000);
+                    Particle.publish("ota_firmware_complete, restarting in 10 seconds", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(10000);
+                    break;
+                }
+                //******************* END DEBUG *********************
             }
             return;
         }
@@ -1792,8 +1829,8 @@ void loop()
           // 0.9.0 version of Argon DeviceOS does not have backup registers implemented, but:
           //    EEPROM could be used to store variables during STANDBY mode (deep sleep mode) but there is no way to wake up the device at a fixed time.
           // Replacing SLEEP_MODE_DEEP with STOP mode System.sleep().
-          //~electron code~System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
           System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+          //~electron code~System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
 
   }
 
@@ -2003,7 +2040,7 @@ void solarHeaterCYCLE() {
                       debug_supercap_charger_Timer_is_running = true;
                       delay(200); // avoid reading the peak current into supercapacitor with INA219
 
-                      //~DEBUG~ ina219 bug introduced by OneWire error-catching retry code: current always reads -0.10.
+                      //********** DEBUG CODE ************** ina219 bug introduced by OneWire error-catching retry code: current always reads -0.10.
                       if(ina219.getCurrent_mA() == -0.10) // This isn't how this should work...
                       {
                           Particle.publish("Testing INA219 current sensor", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
@@ -2012,9 +2049,9 @@ void solarHeaterCYCLE() {
                               Particle.publish("Error in INA219 current sensor. Skipping solarHeaterCYCLE.", String(ina219.getCurrent_mA()), 60, PRIVATE, WITH_ACK);
                               Particle.process();
                               delay(5000);
-                              return;
+                              break;
                           }
-                      } // ~END DEBUG~
+                      } // ******* END DEBUG CODE **********
 
                       Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
                       // ******** DEBUG CODE **********
