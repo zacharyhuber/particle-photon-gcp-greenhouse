@@ -350,7 +350,7 @@ void configureSensor(void)
 bool ota_firmware_pending = false;
 bool ota_firmware_updating = false;
 bool ota_firmware_complete = false;
-bool OTA_update_incoming_DO_NOT_SLEEP = false; // This flag should be unnecessary because of !OTA_update_timer.isActive(). BUT IT *IS* NECESSARTY, because Timer.isActive() doesn't work quickly.
+bool OTA_update_incoming_DO_NOT_SLEEP = false; // This flag should be unnecessary because of !OTA_update_timer.isActive(). BUT IT *IS* NECESSARY, because Timer.isActive() doesn't work quickly.
 
 void otaTimeout() {
     OTA_update_incoming_DO_NOT_SLEEP = false;
@@ -810,15 +810,16 @@ void loop()
   int currentTens_place = (Time.minute() / 10);
 
   //if (currentTens_place == 5) {
-  if (Time.hour() == 14 && currentTens_place == 5) {
-      Particle.connect();
+  while (Time.hour() == 14 && currentTens_place == 5) {
+      if (Particle.connected() == false) {
+          Particle.connect();
+      }
       waitUntil(Particle.connected);
       Particle.process();
-      delay(420000);
+      currentTens_place = (Time.minute() / 10);
       //Particle.publish("No OTA update", PRIVATE);
   }
 
-  //delay(5000); // 5 second pause provides window to manually begin a OTA flash remotely.
   // Particle Product automatic OTA firmware updates can be interrupted by application code.
   // The following should completely block application code while allowing the system code to run, while OTA updates are available.
   if (OTA_update_incoming_DO_NOT_SLEEP == true) {
@@ -826,6 +827,7 @@ void loop()
     Particle.process();
     return;
   }
+  delay(5000); // DEBUG 5 second pause provides window to manually begin a OTA flash remotely.
 
   //unsigned long CurrentMillis = millis();
   //if ((CurrentMillis - LastReading) > SensorFrequency)
@@ -1201,40 +1203,39 @@ do {
         Particle.process();
         if (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true) {
             OTA_update_incoming_DO_NOT_SLEEP = true;
-            Serial.printf("OTA_update_incoming_DO_NOT_SLEEP flag is set to %d . If 1, application code should now stop.");
+            Serial.printf("OTA_update_incoming_DO_NOT_SLEEP flag is set to %d . If 1, application code should now stop.", OTA_update_incoming_DO_NOT_SLEEP);
             Serial.flush();
             OTA_update_timer.start(); // This SHOULD be the last thing the application code does before it stops for the OTA update.
             Particle.process();
-            while (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true) {
-                delay(10000);
+            // DEBUG The original flow of this code block was completed by a "return" below it and a catch at the beginnging of loop() to allow OTA updates prior to application code running.
+            while (OTA_update_incoming_DO_NOT_SLEEP == true) {
+                Particle.process();
                 //**** DEBUG stuck in this section of code ********
                 if (ota_firmware_pending == true) {
                     Particle.publish("debug: ota_firmware_pending", PRIVATE, WITH_ACK);
                     Particle.process();
-                    delay(1000);
+                    delay(2000);
                 }
                 if (ota_firmware_updating == true) {
                     Particle.publish("debug: ota_firmware_updating", PRIVATE, WITH_ACK);
                     Particle.process();
-                    delay(1000);
+                    delay(2000);
                 }
                 if (ota_firmware_complete == true) {
                     Particle.publish("debug: ota_firmware_complete", PRIVATE, WITH_ACK);
                     Particle.process();
-                    delay(1000);
+                    delay(2000);
                 }
                 //Particle.publish("debug OTA updating firmware", PRIVATE);  // This will probably not be published.  That would be good.
                 
                 if (ota_firmware_complete == true) {
-                    delay(60000);
-                    Particle.publish("ota_firmware_complete, restarting in 10 seconds", PRIVATE, WITH_ACK);
+                    Particle.publish("ota_firmware_complete, restarting in 60 seconds", PRIVATE, WITH_ACK);
                     Particle.process();
-                    delay(10000);
+                    delay(60000);
                     break;
                 }
                 //******************* END DEBUG *********************
             }
-            return;
         }
     }
         
@@ -1274,11 +1275,11 @@ do {
                Particle.process();
                delay(3000);
                //System.sleep(SLEEP_MODE_DEEP, 3600000);
-               System.sleep(D8, FALLING, 3600); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+               System.sleep(D8, FALLING, 3600); // TODO check if newer versions are fixed: v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
                System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
            }
             //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-            System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+            System.sleep(D8, FALLING, wakeSeconds); // TODO check if newer versions are fixed: v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
             waitUntil(Particle.connected);
             Particle.publish("waking up from sleep... system resetting", PRIVATE, WITH_ACK);
             Particle.process();
@@ -1289,7 +1290,7 @@ do {
             retry_publish();
             set_wake_time();
             //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-            System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+            System.sleep(D8, FALLING, wakeSeconds); // TODO check if newer versions are fixed: v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
             System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     }
     
@@ -1347,6 +1348,7 @@ do {
           I2C_sensors_finished = false;
           ONEWIRE_sensors_finished = false;
           
+          //TODO replace the following code with call to checkSolarConditions()
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
           if (batteryReading12v > 2700 && lux > 600) { // ~13.0v with diode-skewed GND
               delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
@@ -1798,6 +1800,7 @@ do {
           solarHeaterPAUSE = false;
           */
 
+          //TODO This code shouldn't be necessary because the system should not be connecting to the cloud during the non-publish data storage block. Therefore, an ota update should never be "pending".
           Particle.connect();
           if (waitFor(Particle.connected, 300000)) {
                 Particle.process();
@@ -1807,8 +1810,9 @@ do {
                     Serial.flush();
                     OTA_update_timer.start(); // This SHOULD be the last thing the application code does before it stops for the OTA update.
                     Particle.process();
+                    // DEBUG this while condition was left as a separate test from the OTA_update_timer start to test if it causes the application code hang.  TODO change or remove.
                     while (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true) {
-                        delay(10000);
+                        Particle.process();
                         Particle.publish("debug OTA updating firmware", PRIVATE);  // This will probably not be published.  That would be good.
                     }
                     return;
