@@ -728,7 +728,6 @@ void setup()
   // Register event handler to detect OTA firmware update and prevent the device from sleeping.
   pinMode(D7, OUTPUT); // debug LED not strictly necessary
   digitalWrite(D7, LOW); // LED set HIGH prior to OTA update
-  System.disableUpdates();
   System.on(firmware_update_pending, otaHandler);
   System.on(firmware_update, otaCurrent);
 
@@ -1898,6 +1897,7 @@ void solarHeaterCYCLE() {
                   debug_supercap_charger_Timer_is_running = false;
                   SolarHeaterTimer.dispose();
                   debug_solar_heater_Timer_is_running = false;
+                  System.enableUpdates();
                   BatteryRecoveryTimer.dispose();
                   debug_battery_recovery_Timer_is_running = false;
                   digitalWrite(vDividerOFFpin, HIGH);
@@ -1970,6 +1970,7 @@ void solarHeaterCYCLE() {
                     delay(1000);
                     // ****** END DEBUG CODE ********
                   }
+                  System.enableUpdates();
                   BatteryRecoveryTimer.start();
                   debug_battery_recovery_Timer_is_running = true;
                   Particle.publish("Solar Heater timed out. Starting Battery Recovery.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE);
@@ -2006,6 +2007,7 @@ void solarHeaterCYCLE() {
                   debug_supercap_charger_Timer_is_running = false;
                   SolarHeaterTimer.dispose();
                   debug_solar_heater_Timer_is_running = false;
+                  System.enableUpdates();
                   BatteryRecoveryTimer.dispose();
                   debug_battery_recovery_Timer_is_running = false;
                   //debugging publish, remove if this works:
@@ -2216,12 +2218,15 @@ void solarHeaterCYCLE() {
                   //Particle.process();
                   //delay(1000);
                   // ****** END DEBUG CODE ********
+                  System.disableUpdates();  // Application code hanging with solarHeater ON could quickly kill a battery.
                   //if (currentReading12vBattery < 3350) { // ~12.5v
                   if (currentReading12vBattery < 2100) { // ???~12.0v??? with diode-skewed GND
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
                       debug_solar_heater_Timer_is_running = false;
+
+                      System.enableUpdates();
                       //delay(100);
                       //if (lowestReading12vBattery < 3250) { // ~12.2v
                       if (lowestReading12vBattery < 1950) { // ???~11.5v??? with diode-skewed GND
@@ -2280,6 +2285,8 @@ void solarHeaterCYCLE() {
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
                       debug_solar_heater_Timer_is_running = false;
+                      
+                      System.enableUpdates();
                       BatteryRecoveryTimer.start();
                       debug_battery_recovery_Timer_is_running = true;
                       continue;
