@@ -347,7 +347,7 @@ void configureSensor(void)
     OTA firmware update Timeout and Flags to guard calls to System.sleep() from interrupting firmware updates.
 */
 /**************************************************************************/
-bool ota_firmware_pending = false;
+bool ota_firmware_pending = false; // Not using firmware_update_pending system event flag
 bool ota_firmware_updating = false;
 bool ota_firmware_complete = false;
 bool OTA_update_incoming_DO_NOT_SLEEP = false; // This flag should be unnecessary because of !OTA_update_timer.isActive(). BUT IT *IS* NECESSARY, because Timer.isActive() doesn't work quickly.
@@ -358,6 +358,67 @@ void otaTimeout() {
     Particle.process();
 }
 Timer OTA_update_timer(420000, otaTimeout, true);
+
+// Handler function for System.on firmware_update flags
+void otaCurrent(system_event_t system_event, int param) {
+    switch (param) {
+        case firmware_update_begin:
+        case firmware_update_progress:
+        {
+            digitalWrite(D7, HIGH);
+            ota_firmware_updating = true;
+            break;
+        }
+        case firmware_update_complete:
+        {
+            digitalWrite(D7, LOW);
+            ota_firmware_updating = false;
+            ota_firmware_complete = true;
+            break;
+        }
+        case firmware_update_failed:
+        {
+            digitalWrite(D7, LOW);
+            ota_firmware_updating = false;
+            break;
+        }
+        default:
+        {
+            Particle.publish("OTA handler function error. May need to use simple 0,1,-1 for param", PRIVATE, NO_ACK);
+        }
+    }
+    // doDuringOTA();
+}
+
+/********** REMOVED - not necessary to have an update soon when it is available. TODO reevaluate the time it takes to start OTA update
+void otaHandler() {
+    ota_firmware_pending = true;
+    // doBeforeOTA();
+
+    System.enableUpdates();
+    digitalWrite(D7, HIGH);
+    // *
+    Particle.process();
+    // The following should never run.  May want to change in the future to remove possible blocking code.
+    if (waitFor(checkOTAprogress, 300000)) {
+        Particle.process();
+        delay(200);
+        digitalWrite(D7, LOW);
+        delay(100);
+        digitalWrite(D7, HIGH);
+        delay(200);
+        digitalWrite(D7, LOW);
+        delay(100);
+        digitalWrite(D7, HIGH);
+    } else {
+        digitalWrite(D7, LOW);
+        Particle.publish("OTA update error", PRIVATE);
+    }
+    // * /
+    //delay(300000);  // Could eliminate this blocking code by using if statement to delay sleep.
+    
+} *************************************/
+
 
 
 /**************************************************************************/
@@ -728,8 +789,9 @@ void setup()
   // Register event handler to detect OTA firmware update and prevent the device from sleeping.
   pinMode(D7, OUTPUT); // debug LED not strictly necessary
   digitalWrite(D7, LOW); // LED set HIGH prior to OTA update
-  System.on(firmware_update_pending, otaHandler);
   System.on(firmware_update, otaCurrent);
+  //System.on(firmware_update_pending, otaHandler); //REMOVED - See function for description
+  
 
   Serial.begin(9600);
   // Set up 'power' pins, comment out if not used! (Set up as I2C power pins on current Particle Photon board)
@@ -2443,59 +2505,6 @@ void printDebugInfo() {
   );
 }
 
-void otaHandler() {
-    ota_firmware_pending = true;
-    // doBeforeOTA();
-
-    System.enableUpdates();
-    digitalWrite(D7, HIGH);
-    /*
-    Particle.process();
-    // The following should never run.  May want to change in the future to remove possible blocking code.
-    if (waitFor(checkOTAprogress, 300000)) {
-        Particle.process();
-        delay(200);
-        digitalWrite(D7, LOW);
-        delay(100);
-        digitalWrite(D7, HIGH);
-        delay(200);
-        digitalWrite(D7, LOW);
-        delay(100);
-        digitalWrite(D7, HIGH);
-    } else {
-        digitalWrite(D7, LOW);
-        Particle.publish("OTA update error", PRIVATE);
-    }
-    */
-    //delay(300000);  // Could eliminate this blocking code by using if statement to delay sleep.
-    
-}
-
-void otaCurrent(system_event_t system_event, int mode) {
-    switch (mode) {
-        case firmware_update_begin:
-        case firmware_update_progress:
-        {
-            digitalWrite(D7, HIGH);
-            ota_firmware_updating = true;
-            break;
-        }
-        case firmware_update_complete:
-        {
-            digitalWrite(D7, LOW);
-            ota_firmware_updating = false;
-            ota_firmware_complete = true;
-            break;
-        }
-        case firmware_update_failed:
-        {
-            digitalWrite(D7, LOW);
-            ota_firmware_updating = false;
-            break;
-        }
-    }
-    // doDuringOTA();
-}
 
 // These simple boolean functions are required for formatting conditional statements for waitUntil() and waitFor().
 bool checkOTAprogress(void) {
