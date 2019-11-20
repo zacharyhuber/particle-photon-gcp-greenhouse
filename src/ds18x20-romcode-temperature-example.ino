@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v1.2.1
-PRODUCT_VERSION(16);
+PRODUCT_VERSION(17);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -347,6 +347,7 @@ void configureSensor(void)
     OTA firmware update Timeout and Flags to guard calls to System.sleep() from interrupting firmware updates.
 */
 /**************************************************************************/
+bool ota_update_incoming_DEBUGGING = false;
 bool ota_firmware_pending = false; // Not using firmware_update_pending system event flag
 bool ota_firmware_updating = false;
 bool ota_firmware_complete = false;
@@ -790,6 +791,7 @@ void setup()
   pinMode(D7, OUTPUT); // debug LED not strictly necessary
   digitalWrite(D7, LOW); // LED set HIGH prior to OTA update
   System.on(firmware_update, otaCurrent);
+  Particle.publish("OTA event handler registered", PRIVATE);
   //System.on(firmware_update_pending, otaHandler); //REMOVED - See function for description
   
 
@@ -867,6 +869,17 @@ void setup()
 
 void loop()
 {
+    // ***** DEBUGGING OTA firmware update "success" loop *****
+    if (ota_firmware_updating == true) {
+        Particle.publish("ota_firmware_updating == true", PRIVATE, WITH_ACK);
+        Particle.process();
+    }
+    if (ota_firmware_complete == true) {
+        Particle.publish("ota_firmware_complete == true", PRIVATE, WITH_ACK);
+        Particle.process();
+    }
+    // ****************** END DEBUG CODE *********************
+
   //delay(5000); // 5 second pause provides window to manually begin a OTA flash remotely.  Should use Particle Product instead.
   int currentTens_place = (Time.minute() / 10);
 
@@ -885,6 +898,11 @@ void loop()
   // The following should completely block application code while allowing the system code to run, while OTA updates are available.
   if (OTA_update_incoming_DO_NOT_SLEEP == true) {
   //if (OTA_update_timer.isActive()) { // Timer.isActive() is slow to respond.
+    if (ota_update_incoming_DEBUGGING == false) {
+        Particle.publish("OTA_update_incoming_DO_NOT_SLEEP == true", PRIVATE, WITH_ACK);
+        Particle.process();
+        ota_update_incoming_DEBUGGING = true;
+    }
     Particle.process();
     return;
   }
