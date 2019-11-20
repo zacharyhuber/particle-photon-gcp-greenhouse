@@ -1,6 +1,6 @@
 {
     "C_Cpp.intelliSenseEngineFallback": "Disabled",
-    "particle.firmwareVersion": "1.2.1",
+    "particle.firmwareVersion": "1.4.2",
     "particle.targetPlatform": "argon",
     "particle.targetDevice": "vampire_lawyer"
 }
