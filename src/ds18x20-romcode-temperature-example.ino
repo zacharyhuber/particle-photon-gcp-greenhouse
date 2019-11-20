@@ -3,11 +3,11 @@
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
  * Date: Feb 21, 2019
- * Version: 0.2.1
+ * Version: 0.2.3
  */
 // Product ID and Version for Particle Product firmware deployment
-PRODUCT_ID(9008); // Argon version using DeviceOS v0.9.0
-PRODUCT_VERSION(14);
+PRODUCT_ID(9008); // Argon version using DeviceOS v1.2.1
+PRODUCT_VERSION(18);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -347,10 +347,11 @@ void configureSensor(void)
     OTA firmware update Timeout and Flags to guard calls to System.sleep() from interrupting firmware updates.
 */
 /**************************************************************************/
-bool ota_firmware_pending = false;
+bool ota_update_incoming_DEBUGGING = false;
+bool ota_firmware_pending = false; // Not using firmware_update_pending system event flag
 bool ota_firmware_updating = false;
 bool ota_firmware_complete = false;
-bool OTA_update_incoming_DO_NOT_SLEEP = false; // This flag should be unnecessary because of !OTA_update_timer.isActive(). BUT IT *IS* NECESSARTY, because Timer.isActive() doesn't work quickly.
+bool OTA_update_incoming_DO_NOT_SLEEP = false; // This flag should be unnecessary because of !OTA_update_timer.isActive(). BUT IT *IS* NECESSARY, because Timer.isActive() doesn't work quickly.
 
 void otaTimeout() {
     OTA_update_incoming_DO_NOT_SLEEP = false;
@@ -358,6 +359,67 @@ void otaTimeout() {
     Particle.process();
 }
 Timer OTA_update_timer(420000, otaTimeout, true);
+
+// Handler function for System.on firmware_update flags
+void otaCurrent(system_event_t system_event, int param) {
+    switch (param) {
+        case firmware_update_begin:
+        case firmware_update_progress:
+        {
+            digitalWrite(D7, HIGH);
+            ota_firmware_updating = true;
+            break;
+        }
+        case firmware_update_complete:
+        {
+            digitalWrite(D7, LOW);
+            ota_firmware_updating = false;
+            ota_firmware_complete = true;
+            break;
+        }
+        case firmware_update_failed:
+        {
+            digitalWrite(D7, LOW);
+            ota_firmware_updating = false;
+            break;
+        }
+        default:
+        {
+            Particle.publish("OTA handler function error. May need to use simple 0,1,-1 for param", PRIVATE, NO_ACK);
+        }
+    }
+    // doDuringOTA();
+}
+
+/********** REMOVED - not necessary to have an update soon when it is available. TODO reevaluate the time it takes to start OTA update
+void otaHandler() {
+    ota_firmware_pending = true;
+    // doBeforeOTA();
+
+    System.enableUpdates();
+    digitalWrite(D7, HIGH);
+    // *
+    Particle.process();
+    // The following should never run.  May want to change in the future to remove possible blocking code.
+    if (waitFor(checkOTAprogress, 300000)) {
+        Particle.process();
+        delay(200);
+        digitalWrite(D7, LOW);
+        delay(100);
+        digitalWrite(D7, HIGH);
+        delay(200);
+        digitalWrite(D7, LOW);
+        delay(100);
+        digitalWrite(D7, HIGH);
+    } else {
+        digitalWrite(D7, LOW);
+        Particle.publish("OTA update error", PRIVATE);
+    }
+    // * /
+    //delay(300000);  // Could eliminate this blocking code by using if statement to delay sleep.
+    
+} *************************************/
+
 
 
 /**************************************************************************/
@@ -728,9 +790,10 @@ void setup()
   // Register event handler to detect OTA firmware update and prevent the device from sleeping.
   pinMode(D7, OUTPUT); // debug LED not strictly necessary
   digitalWrite(D7, LOW); // LED set HIGH prior to OTA update
-  System.disableUpdates();
-  System.on(firmware_update_pending, otaHandler);
   System.on(firmware_update, otaCurrent);
+  Particle.publish("OTA event handler registered", PRIVATE);
+  //System.on(firmware_update_pending, otaHandler); //REMOVED - See function for description
+  
 
   Serial.begin(9600);
   // Set up 'power' pins, comment out if not used! (Set up as I2C power pins on current Particle Photon board)
@@ -806,26 +869,44 @@ void setup()
 
 void loop()
 {
+    // ***** DEBUGGING OTA firmware update "success" loop *****
+    if (ota_firmware_updating == true) {
+        Particle.publish("ota_firmware_updating == true", PRIVATE, WITH_ACK);
+        Particle.process();
+    }
+    if (ota_firmware_complete == true) {
+        Particle.publish("ota_firmware_complete == true", PRIVATE, WITH_ACK);
+        Particle.process();
+    }
+    // ****************** END DEBUG CODE *********************
+
   //delay(5000); // 5 second pause provides window to manually begin a OTA flash remotely.  Should use Particle Product instead.
   int currentTens_place = (Time.minute() / 10);
 
   //if (currentTens_place == 5) {
-  if (Time.hour() == 14 && currentTens_place == 5) {
-      Particle.connect();
+  while (Time.hour() == 14 && currentTens_place == 5) {
+      if (Particle.connected() == false) {
+          Particle.connect();
+      }
       waitUntil(Particle.connected);
       Particle.process();
-      delay(420000);
+      currentTens_place = (Time.minute() / 10);
       //Particle.publish("No OTA update", PRIVATE);
   }
 
-  //delay(5000); // 5 second pause provides window to manually begin a OTA flash remotely.
   // Particle Product automatic OTA firmware updates can be interrupted by application code.
   // The following should completely block application code while allowing the system code to run, while OTA updates are available.
   if (OTA_update_incoming_DO_NOT_SLEEP == true) {
   //if (OTA_update_timer.isActive()) { // Timer.isActive() is slow to respond.
+    if (ota_update_incoming_DEBUGGING == false) {
+        Particle.publish("OTA_update_incoming_DO_NOT_SLEEP == true", PRIVATE, WITH_ACK);
+        Particle.process();
+        ota_update_incoming_DEBUGGING = true;
+    }
     Particle.process();
     return;
   }
+  delay(5000); // DEBUG 5 second pause provides window to manually begin a OTA flash remotely.
 
   //unsigned long CurrentMillis = millis();
   //if ((CurrentMillis - LastReading) > SensorFrequency)
@@ -940,6 +1021,7 @@ void loop()
       //LastReading = millis();
   }
 
+do {
   // Read the next available 1-Wire temperature sensor
   if (sensor.read()) {
     // Do something cool with the temperature
@@ -1027,19 +1109,21 @@ void loop()
         Particle.publish("debug ONEWIRE CRC ERROR, check wiring...", PRIVATE);
         Particle.process();
         delay(1000);
-        return; // Bail loop() to retry sensor.read()
+        continue; // skip to conditional "while" to retry sensor.read()
     }
     // Once all sensors have been read you'll get searchDone() == true
     // Next time read() is called the first sensor is read again
     if (sensor.searchDone()) {
       Serial.println("No more addresses.");
+      
+      /**************** TESTING do...while loop ******************
       // DEBUG simple fix to keep from .publish-ing until at least one Temp is recorded. It might be better to handle this immediately after reading sensors.
       if (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0) {
           Particle.publish("Error Reading OneWire Sensors", PRIVATE, NO_ACK);
       } else {
           ONEWIRE_sensors_finished = true;
-      }
-      //~debug~ONEWIRE_sensors_finished = true;
+      } *******************/
+      ONEWIRE_sensors_finished = true;
       // Avoid excessive printing when no sensors are connected
       delay(250);
 
@@ -1049,6 +1133,10 @@ void loop()
     }
   }
   Serial.println();
+
+} while ((ONEWIRE_sensors_finished == false) || (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0));  // TODO Needs to be updated as additional weather hardened sensors are added
+
+  
 
   /*
   if (I2C_sensors_finished == true && ONEWIRE_sensors_finished == true) {
@@ -1192,17 +1280,41 @@ void loop()
     Particle.connect();
     if (waitFor(Particle.connected, 300000)) {
         Particle.process();
-        if (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
+        if (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true) {
             OTA_update_incoming_DO_NOT_SLEEP = true;
-            Serial.printf("OTA_update_incoming_DO_NOT_SLEEP flag is set to %d . If 1, application code should now stop.");
+            Serial.printf("OTA_update_incoming_DO_NOT_SLEEP flag is set to %d . If 1, application code should now stop.", OTA_update_incoming_DO_NOT_SLEEP);
             Serial.flush();
             OTA_update_timer.start(); // This SHOULD be the last thing the application code does before it stops for the OTA update.
             Particle.process();
-            while (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
-                delay(10000);
-                Particle.publish("debug OTA updating firmware", PRIVATE);  // This will probably not be published.  That would be good.
+            // DEBUG The original flow of this code block was completed by a "return" below it and a catch at the beginnging of loop() to allow OTA updates prior to application code running.
+            while (OTA_update_incoming_DO_NOT_SLEEP == true) {
+                Particle.process();
+                //**** DEBUG stuck in this section of code ********
+                if (ota_firmware_pending == true) {
+                    Particle.publish("debug: ota_firmware_pending", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(2000);
+                }
+                if (ota_firmware_updating == true) {
+                    Particle.publish("debug: ota_firmware_updating", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(2000);
+                }
+                if (ota_firmware_complete == true) {
+                    Particle.publish("debug: ota_firmware_complete", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(2000);
+                }
+                //Particle.publish("debug OTA updating firmware", PRIVATE);  // This will probably not be published.  That would be good.
+                
+                if (ota_firmware_complete == true) {
+                    Particle.publish("ota_firmware_complete, restarting in 60 seconds", PRIVATE, WITH_ACK);
+                    Particle.process();
+                    delay(60000);
+                    break;
+                }
+                //******************* END DEBUG *********************
             }
-            return;
         }
     }
         
@@ -1240,11 +1352,11 @@ void loop()
                Particle.process();
                delay(3000);
                //System.sleep(SLEEP_MODE_DEEP, 3600000);
-               System.sleep(D8, FALLING, 3600); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+               System.sleep(D8, FALLING, 3600); // TODO check if newer versions are fixed: v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
                System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
            }
             //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-            System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+            System.sleep(D8, FALLING, wakeSeconds); // TODO check if newer versions are fixed: v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
             waitUntil(Particle.connected);
             Particle.publish("waking up from sleep... system resetting", PRIVATE, WITH_ACK);
             Particle.process();
@@ -1255,7 +1367,7 @@ void loop()
             retry_publish();
             set_wake_time();
             //System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
-            System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+            System.sleep(D8, FALLING, wakeSeconds); // TODO check if newer versions are fixed: v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
             System.reset(); // Added to make sure reset occurs if System.sleep(SLEEP_MODE_DEEP) is not implemented in system firmware.
     }
     
@@ -1313,6 +1425,7 @@ void loop()
           I2C_sensors_finished = false;
           ONEWIRE_sensors_finished = false;
           
+          //TODO replace the following code with call to checkSolarConditions()
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
           if (batteryReading12v > 2700 && lux > 600) { // ~13.0v with diode-skewed GND
               delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
@@ -1764,17 +1877,19 @@ void loop()
           solarHeaterPAUSE = false;
           */
 
+          //TODO This code shouldn't be necessary because the system should not be connecting to the cloud during the non-publish data storage block. Therefore, an ota update should never be "pending".
           Particle.connect();
           if (waitFor(Particle.connected, 300000)) {
                 Particle.process();
-                if (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
+                if (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true) {
                     OTA_update_incoming_DO_NOT_SLEEP = true;
                     Serial.printf("OTA_update_incoming_DO_NOT_SLEEP flag is set to %d . If 1, application code should now stop.");
                     Serial.flush();
                     OTA_update_timer.start(); // This SHOULD be the last thing the application code does before it stops for the OTA update.
                     Particle.process();
-                    while (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true || System.updatesPending()) {
-                        delay(10000);
+                    // DEBUG this while condition was left as a separate test from the OTA_update_timer start to test if it causes the application code hang.  TODO change or remove.
+                    while (ota_firmware_pending == true || ota_firmware_updating == true || ota_firmware_complete == true) {
+                        Particle.process();
                         Particle.publish("debug OTA updating firmware", PRIVATE);  // This will probably not be published.  That would be good.
                     }
                     return;
@@ -1790,8 +1905,8 @@ void loop()
           // 0.9.0 version of Argon DeviceOS does not have backup registers implemented, but:
           //    EEPROM could be used to store variables during STANDBY mode (deep sleep mode) but there is no way to wake up the device at a fixed time.
           // Replacing SLEEP_MODE_DEEP with STOP mode System.sleep().
-          //~electron code~System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
           System.sleep(D8, FALLING, wakeSeconds); // v0.9.0 of DeviceOS does not have a self-terminating SLEEP_MODE_DEEP, so use STOP mode
+          //~electron code~System.sleep(SLEEP_MODE_DEEP, wakeSeconds, SLEEP_NETWORK_STANDBY);
 
   }
 
@@ -1860,6 +1975,7 @@ void solarHeaterCYCLE() {
                   debug_supercap_charger_Timer_is_running = false;
                   SolarHeaterTimer.dispose();
                   debug_solar_heater_Timer_is_running = false;
+                  System.enableUpdates();
                   BatteryRecoveryTimer.dispose();
                   debug_battery_recovery_Timer_is_running = false;
                   digitalWrite(vDividerOFFpin, HIGH);
@@ -1932,6 +2048,7 @@ void solarHeaterCYCLE() {
                     delay(1000);
                     // ****** END DEBUG CODE ********
                   }
+                  System.enableUpdates();
                   BatteryRecoveryTimer.start();
                   debug_battery_recovery_Timer_is_running = true;
                   Particle.publish("Solar Heater timed out. Starting Battery Recovery.", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE);
@@ -1968,6 +2085,7 @@ void solarHeaterCYCLE() {
                   debug_supercap_charger_Timer_is_running = false;
                   SolarHeaterTimer.dispose();
                   debug_solar_heater_Timer_is_running = false;
+                  System.enableUpdates();
                   BatteryRecoveryTimer.dispose();
                   debug_battery_recovery_Timer_is_running = false;
                   //debugging publish, remove if this works:
@@ -2000,6 +2118,20 @@ void solarHeaterCYCLE() {
                       SupercapChargerTimer.start();
                       debug_supercap_charger_Timer_is_running = true;
                       delay(200); // avoid reading the peak current into supercapacitor with INA219
+
+                      //********** DEBUG CODE ************** ina219 bug introduced by OneWire error-catching retry code: current always reads -0.10.
+                      if(ina219.getCurrent_mA() == -0.10) // This isn't how this should work...
+                      {
+                          Particle.publish("Testing INA219 current sensor", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
+                          ina219.begin();
+                          if(ina219.getCurrent_mA() == -0.10) {
+                              Particle.publish("Error in INA219 current sensor. Skipping solarHeaterCYCLE.", String(ina219.getCurrent_mA()), 60, PRIVATE, WITH_ACK);
+                              Particle.process();
+                              delay(5000);
+                              break;
+                          }
+                      } // ******* END DEBUG CODE **********
+
                       Particle.publish("Supercapacitor Charger STARTED. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
                       // ******** DEBUG CODE **********
                       Particle.process();
@@ -2164,12 +2296,15 @@ void solarHeaterCYCLE() {
                   //Particle.process();
                   //delay(1000);
                   // ****** END DEBUG CODE ********
+                  System.disableUpdates();  // Application code hanging with solarHeater ON could quickly kill a battery.
                   //if (currentReading12vBattery < 3350) { // ~12.5v
                   if (currentReading12vBattery < 2100) { // ???~12.0v??? with diode-skewed GND
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
                       debug_solar_heater_Timer_is_running = false;
+
+                      System.enableUpdates();
                       //delay(100);
                       //if (lowestReading12vBattery < 3250) { // ~12.2v
                       if (lowestReading12vBattery < 1950) { // ???~11.5v??? with diode-skewed GND
@@ -2228,6 +2363,8 @@ void solarHeaterCYCLE() {
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
                       debug_solar_heater_Timer_is_running = false;
+                      
+                      System.enableUpdates();
                       BatteryRecoveryTimer.start();
                       debug_battery_recovery_Timer_is_running = true;
                       continue;
@@ -2384,59 +2521,6 @@ void printDebugInfo() {
   );
 }
 
-void otaHandler() {
-    ota_firmware_pending = true;
-    // doBeforeOTA();
-
-    System.enableUpdates();
-    digitalWrite(D7, HIGH);
-    /*
-    Particle.process();
-    // The following should never run.  May want to change in the future to remove possible blocking code.
-    if (waitFor(checkOTAprogress, 300000)) {
-        Particle.process();
-        delay(200);
-        digitalWrite(D7, LOW);
-        delay(100);
-        digitalWrite(D7, HIGH);
-        delay(200);
-        digitalWrite(D7, LOW);
-        delay(100);
-        digitalWrite(D7, HIGH);
-    } else {
-        digitalWrite(D7, LOW);
-        Particle.publish("OTA update error", PRIVATE);
-    }
-    */
-    //delay(300000);  // Could eliminate this blocking code by using if statement to delay sleep.
-    
-}
-
-void otaCurrent(system_event_t system_event, int mode) {
-    switch (mode) {
-        case firmware_update_begin:
-        case firmware_update_progress:
-        {
-            digitalWrite(D7, HIGH);
-            ota_firmware_updating = true;
-            break;
-        }
-        case firmware_update_complete:
-        {
-            digitalWrite(D7, LOW);
-            ota_firmware_updating = false;
-            ota_firmware_complete = true;
-            break;
-        }
-        case firmware_update_failed:
-        {
-            digitalWrite(D7, LOW);
-            ota_firmware_updating = false;
-            break;
-        }
-    }
-    // doDuringOTA();
-}
 
 // These simple boolean functions are required for formatting conditional statements for waitUntil() and waitFor().
 bool checkOTAprogress(void) {
@@ -2450,8 +2534,4 @@ bool checkOTAprogress(void) {
         Serial.println("error in checkOTAprogress");
         return -1;
     }
-}
-
-bool checkSystemUpdateprogress(void) {
-    return !System.updatesPending();
 }
