@@ -7,7 +7,15 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v1.2.1
-PRODUCT_VERSION(21);
+PRODUCT_VERSION(23);
+/* Particle Product Description:
+DEBUGGING INA219 problems (removed OneWire reliability fix). 700F supercapacitor & 75W AC water heater. 
+Particle Product firmware for Argon Winter Greenhouse Solar Heat Controller. 
+System.sleep (STOP mode) functional. Solar Heater / Supercapacitor Charger functional. OTA update functional. 
+Uploads every 10 minutes. 700F supercapacitor & 75W water heater connected via 400w (1000w max) inverter. 
+(removed)OneWire reliability fixed with do…while loop to cycle through multiple errors. ERROR in INA219 current sensor. 
+Possible error in GND-level supercapacitor control board OR damaged supercapacitor.
+ */
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -2066,7 +2074,7 @@ void solarHeaterCYCLE() {
                   minimum_battery_recovery_Duration = false;
                   int highestReading12vBattery = analogRead(vDividerREADpin);
                   //if (highestReading12vBattery < 3400) {
-                  if (highestReading12vBattery < 3850) { // <13.0v with diode-skewed GND
+                  if (highestReading12vBattery < 3000) { // >13.5v with current hardware condition: November 27, 2019
                       Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
                       reset_BatteryRecoveryTimer = true;
                   }
@@ -2249,7 +2257,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3950 && minimum_battery_recovery_Duration == false) { // TESTED! = 13.8v with diode-skewed GND (Float voltage (13.2v) is about 3320 in current setup)
+                  if (currentReading12vBattery > 3000 && minimum_battery_recovery_Duration == false) { // >13.5v with current hardware condition: November 17, 2019
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
