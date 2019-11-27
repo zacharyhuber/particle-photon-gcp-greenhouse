@@ -1021,7 +1021,7 @@ void loop()
       //LastReading = millis();
   }
 
-do {
+//***DEBUG INA219 problems*** //do {
   // Read the next available 1-Wire temperature sensor
   if (sensor.read()) {
     // Do something cool with the temperature
@@ -1109,7 +1109,8 @@ do {
         Particle.publish("debug ONEWIRE CRC ERROR, check wiring...", PRIVATE);
         Particle.process();
         delay(1000);
-        continue; // skip to conditional "while" to retry sensor.read()
+        //***DEBUG INA219 problems*** //continue; // skip to conditional "while" to retry sensor.read()
+        return;
     }
     // Once all sensors have been read you'll get searchDone() == true
     // Next time read() is called the first sensor is read again
@@ -1134,7 +1135,7 @@ do {
   }
   Serial.println();
 
-} while ((ONEWIRE_sensors_finished == false) || (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0));  // TODO Needs to be updated as additional weather hardened sensors are added
+//***DEBUG INA219 problems*** //} while ((ONEWIRE_sensors_finished == false) || (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0));  // TODO Needs to be updated as additional weather hardened sensors are added
 
   
 
