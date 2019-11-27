@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v1.2.1
-PRODUCT_VERSION(18);
+PRODUCT_VERSION(21);
 
 // Semi-Automatic Mode allows collection of data without a network connection.
 // Particle.connect() will block the rest of the application code until a connection to Particle Cloud is established.
@@ -865,6 +865,7 @@ void setup()
   }
   waitFor (Time.isValid, 60000);
 
+  delay(5000); // DEBUG 5 second pause provides window to manually begin a OTA flash remotely.
 }
 
 void loop()
@@ -906,7 +907,6 @@ void loop()
     Particle.process();
     return;
   }
-  delay(5000); // DEBUG 5 second pause provides window to manually begin a OTA flash remotely.
 
   //unsigned long CurrentMillis = millis();
   //if ((CurrentMillis - LastReading) > SensorFrequency)
