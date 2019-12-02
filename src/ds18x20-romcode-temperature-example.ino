@@ -1616,7 +1616,7 @@ void loop()
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  } else if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+                  } else if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) { //REMOVED large supercapacitor in later hardware: December 2, 2019.
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
                       digitalWrite(relay3pin, LOW);
@@ -1635,7 +1635,7 @@ void loop()
                       // ****** END DEBUG CODE ********
                       continue;
                       /********************************************* // Moved into else/if statement
-                      if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) { // DEBUG need to figure out wiring of relays
+                      if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) { // DEBUG need to figure out wiring of relays //REMOVED large supercapacitor in later hardware: December, 2 2018.
                           digitalWrite(relay2pin, LOW);
                           delay(1000);
                           digitalWrite(relay3pin, LOW);
@@ -1669,7 +1669,7 @@ void loop()
                   }
                   /******** DEBUG REMOVE AND PLACE IN ! (NOT) conditional *********
                   if (SupercapChargerTimer.isActive()) {
-                      if (ina219.getCurrent_mA() > -300) {  // DEBUG this may need to be reversed " < 300"
+                      if (ina219.getCurrent_mA() > -300) {  // DEBUG this may need to be reversed " < 300" //REMOVED large supercapacitor in later hardware: December 2, 2019
                           digitalWrite(relay2pin, LOW);
                           delay(1000);
                           digitalWrite(relay3pin, LOW);
@@ -1777,7 +1777,7 @@ void loop()
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  } else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -200) {
+                  } else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -200) { //REMOVED large supercapacitor in later hardware: December 2, 2019
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       // ******** DEBUG CODE **********
                       Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
@@ -1856,10 +1856,10 @@ void loop()
                   digitalWrite(relay2pin, HIGH);
                   long start_of_supercap_chargeMillis = millis();
               }*/
-              /*if (ina219.getCurrent_mA() > 2500 || ina219.getCurrent_mA() < -2500) {
+              /*if (ina219.getCurrent_mA() > 2500 || ina219.getCurrent_mA() < -2500) { //REMOVED large supercapacitor in later hardware: December 2, 2019
                   continue;
               }*/
-              /*if (currentMillis - start_of_supercap_chargeMillis < Supercap_Charging_Period && ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+              /*if (currentMillis - start_of_supercap_chargeMillis < Supercap_Charging_Period && ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) { //REMOVED large supercapacitor in later hardware: December 2, 2019
                   //float busvoltage = 0;
                   //float current_mA = 0;
                   //busvoltage = ina219.getBusVoltage_V();
@@ -2147,6 +2147,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
+                  /******** REMOVED large supercapacitor in later hardware: December 2, 2019 *************
                   } else if (ina219.getCurrent_mA() < 600 && ina219.getCurrent_mA() > -500) {
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
@@ -2165,24 +2166,7 @@ void solarHeaterCYCLE() {
                       delay(3000);
                       // ****** END DEBUG CODE ********
                       continue;
-                      /********************************************* // Moved into else/if statement
-                      if (ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) { // DEBUG need to figure out wiring of relays
-                          digitalWrite(relay2pin, LOW);
-                          delay(1000);
-                          digitalWrite(relay3pin, LOW);
-                          SupercapChargerTimer.dispose();
-                          delay(1000); // allow relay connection to break before connecting large load
-                          SolarHeaterTimer.start();
-                          digitalWrite(relay1pin, HIGH);
-                          // turn on high power heater, connected to D7
-                          int priorReading12vBattery = analogRead(vDividerREADpin);
-                          Particle.publish("Solar Heating Element STARTED. Supercapacitor current(mA)", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
-                          // ******** DEBUG CODE **********
-                          Particle.process();
-                          delay(1000);
-                          // ****** END DEBUG CODE ********
-                      }
-                      **********************************************/
+                      ********** REMOVED large supercapacitor in later hardware: December 2, 2019 ****/
                   } else if (ina219.getBusVoltage_V() > 2.0) {
                       digitalWrite(relay2pin, LOW);
                       delay(1000);
@@ -2219,7 +2203,7 @@ void solarHeaterCYCLE() {
                   }
                   /******** DEBUG REMOVE AND PLACE IN ! (NOT) conditional *********
                   if (SupercapChargerTimer.isActive()) {
-                      if (ina219.getCurrent_mA() > -300) {  // DEBUG this may need to be reversed " < 300"
+                      if (ina219.getCurrent_mA() > -300) {  // DEBUG this may need to be reversed " < 300" //REMOVED large supercapacitor in later hardware: December 2, 2019
                           digitalWrite(relay2pin, LOW);
                           delay(1000);
                           digitalWrite(relay3pin, LOW);
@@ -2336,7 +2320,7 @@ void solarHeaterCYCLE() {
                       delay(1000);
                       // ****** END DEBUG CODE ********
                       continue;
-                  /*} else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -100) {
+                  /*} else if (ina219.getCurrent_mA() < 200 && ina219.getCurrent_mA() > -100) { //REMOVED large supercapacitor in later hardware: December 2, 2019
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       // ******** DEBUG CODE **********
                       Particle.publish("debug Turning Off Solar Heater to Recharge Supercapacitor", String::format("{\"Supercapacitor_Voltage\":%.2f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), lowestReading12vBattery), PRIVATE, NO_ACK);
@@ -2431,10 +2415,10 @@ void solarHeaterCYCLE() {
                   digitalWrite(relay2pin, HIGH);
                   long start_of_supercap_chargeMillis = millis();
               }*/
-              /*if (ina219.getCurrent_mA() > 2500 || ina219.getCurrent_mA() < -2500) {
+              /*if (ina219.getCurrent_mA() > 2500 || ina219.getCurrent_mA() < -2500) { //REMOVED large supercapacitor in later hardware: December 2, 2019
                   continue;
               }*/
-              /*if (currentMillis - start_of_supercap_chargeMillis < Supercap_Charging_Period && ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) {
+              /*if (currentMillis - start_of_supercap_chargeMillis < Supercap_Charging_Period && ina219.getCurrent_mA() < 300 && ina219.getCurrent_mA() > -300) { //REMOVED large supercapacitor in later hardware: December 2, 2019
                   //float busvoltage = 0;
                   //float current_mA = 0;
                   //busvoltage = ina219.getBusVoltage_V();
