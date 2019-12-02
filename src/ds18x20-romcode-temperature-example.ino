@@ -545,7 +545,7 @@ const int Time_for_SolarHeater_ON = 15; //9:00 AM CST (3:00 PM UTC)
 const int Time_for_SolarHeater_OFF = 23; //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
 const int MAX_SolarHeater_ON_Time = 240000; // in millis
 const int Supercap_Charging_Period = 240000; // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
-const int Battery12v_Recovery_Period = 120000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+const int Battery12v_Recovery_Period = 30000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 
 bool testingSolarCharger = false;
 bool test_of_Solar_Charger_failed = false;
