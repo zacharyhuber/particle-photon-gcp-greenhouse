@@ -2345,6 +2345,7 @@ void solarHeaterCYCLE() {
                       // ****** END DEBUG CODE ********
                       continue;
                       */
+                  /******** REMOVED large supercapacitor in later hardware: December 2, 2019 *************
                   } else if (ina219.getBusVoltage_V() < 0.5) {
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       // ******** DEBUG CODE **********
@@ -2361,6 +2362,7 @@ void solarHeaterCYCLE() {
                       BatteryRecoveryTimer.start();
                       debug_battery_recovery_Timer_is_running = true;
                       continue;
+                      ******** REMOVED large supercapacitor in later hardware: December 2, 2019 *************/
                   } else {
                       // ******** DEBUG CODE **********
                       Particle.publish("debug SolarHeater.isActive. Current(mA):", String(ina219.getCurrent_mA()), PRIVATE, NO_ACK);
