@@ -7,7 +7,7 @@
  */
 // Product ID and Version for Particle Product firmware deployment
 PRODUCT_ID(9008); // Argon version using DeviceOS v1.2.1
-PRODUCT_VERSION(23);
+PRODUCT_VERSION(24);
 /* Particle Product Description:
 DEBUGGING INA219 problems (removed OneWire reliability fix). 700F supercapacitor & 75W AC water heater. 
 Particle Product firmware for Argon Winter Greenhouse Solar Heat Controller. 
@@ -2074,13 +2074,18 @@ void solarHeaterCYCLE() {
                   minimum_battery_recovery_Duration = false;
                   int highestReading12vBattery = analogRead(vDividerREADpin);
                   //if (highestReading12vBattery < 3400) {
-                  if (highestReading12vBattery < 3000) { // >13.5v with current hardware condition: November 27, 2019
+                  if (highestReading12vBattery < 2800) { // ~13.3v with current hardware condition: November 27, 2019
                       Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
                       reset_BatteryRecoveryTimer = true;
                   }
               }
-              
 
+              if (reset_BatteryRecoveryTimer == true) {
+                  reset_BatteryRecoveryTimer = false;
+                  BatteryRecoveryTimer.reset();
+                  debug_battery_recovery_Timer_is_running = true;
+              }
+              
               int currentReading12vBattery = analogRead(vDividerREADpin);
               //if (currentReading12vBattery < 3200) { // ~12.0v
               if (currentReading12vBattery < 1950) { // ??? 11.5v ??? with diode-skewed GND // DEBUG this shouldn't have triggered...
@@ -2108,11 +2113,6 @@ void solarHeaterCYCLE() {
                   // this break uses the system.sleep below this while loop
               } // else if (currentReading12vBattery > 3400) {}
 
-              if (reset_BatteryRecoveryTimer == true) {
-                  reset_BatteryRecoveryTimer = false;
-                  BatteryRecoveryTimer.reset();
-                  debug_battery_recovery_Timer_is_running = true;
-              }
 
               if (debug_solar_heater_Timer_is_running == false && debug_battery_recovery_Timer_is_running == false) { // DEBUG !SolarHeaterTimer.isActive() and !BatteryRecoveryTimer.isActive() were not evaluating correctly
                   if (debug_supercap_charger_Timer_is_running == false) { // DEBUG !SupercapChargerTimer.isActive() was not evaluating correctly
