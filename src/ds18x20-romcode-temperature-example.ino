@@ -2241,7 +2241,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3000 && minimum_battery_recovery_Duration == false) { // >13.5v with current hardware condition: November 17, 2019
+                  if (currentReading12vBattery > 3100 && minimum_battery_recovery_Duration == false) { // >13.5v with current hardware condition: November 17, 2019
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
@@ -2291,7 +2291,7 @@ void solarHeaterCYCLE() {
                   // ****** END DEBUG CODE ********
                   System.disableUpdates();  // Application code hanging with solarHeater ON could quickly kill a battery.
                   //if (currentReading12vBattery < 3350) { // ~12.5v
-                  if (currentReading12vBattery < 2100) { // ???~12.0v??? with diode-skewed GND
+                  if (currentReading12vBattery < 2400) { // Measured: 2140 = 10.97v with current hardware: December 3, 2019
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
@@ -2300,7 +2300,7 @@ void solarHeaterCYCLE() {
                       System.enableUpdates();
                       //delay(100);
                       //if (lowestReading12vBattery < 3250) { // ~12.2v
-                      if (lowestReading12vBattery < 1950) { // ???~11.5v??? with diode-skewed GND
+                      if (lowestReading12vBattery < 2300) {
                           //debugging publish, remove if this works:
                           Particle.publish("Very Low battery under load from Solar Heater.", String(lowestReading12vBattery), PRIVATE);
                           // ******** DEBUG CODE **********
