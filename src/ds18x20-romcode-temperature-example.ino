@@ -2437,6 +2437,7 @@ void solarHeaterCYCLE() {
               //digitalWrite(relay3pin, HIGH);
               //digitalWrite(relay2pin), HIGH);
       }
+      System.enableUpdates();
       if (solarHeaterPAUSE == true) {
           Particle.publish("Solar Heater PAUSED for Sensor Reading", String(ina219.getBusVoltage_V()), PRIVATE);
           // DEBUG CODE
