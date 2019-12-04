@@ -1029,7 +1029,8 @@ void loop()
       //LastReading = millis();
   }
 
-//***DEBUG INA219 problems*** //do {
+//***DEBUG INA219 problems*** 
+do {
   // Read the next available 1-Wire temperature sensor
   if (sensor.read()) {
     // Do something cool with the temperature
@@ -1143,7 +1144,8 @@ void loop()
   }
   Serial.println();
 
-//***DEBUG INA219 problems*** //} while ((ONEWIRE_sensors_finished == false) || (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0));  // TODO Needs to be updated as additional weather hardened sensors are added
+//***DEBUG INA219 problems*** 
+} while ((ONEWIRE_sensors_finished == false) || (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0));  // TODO Needs to be updated as additional weather hardened sensors are added
 
   
 
