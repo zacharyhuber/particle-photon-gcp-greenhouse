@@ -2096,8 +2096,8 @@ void solarHeaterCYCLE() {
               }
               
               int currentReading12vBattery = analogRead(vDividerREADpin);
-              //if (currentReading12vBattery < 3200) { // ~12.0v
-              if (currentReading12vBattery < critical12vBatteryVoltage) { 
+              // TODO This should be a more careful process to protect lead acid battery from sulfation during very low voltage
+              if (currentReading12vBattery < dangerous12vBatteryVoltage) { 
                   digitalWrite(relay1pin, LOW);
                   delay(500);
                   digitalWrite(relay2pin, LOW);
@@ -2111,8 +2111,7 @@ void solarHeaterCYCLE() {
                   System.enableUpdates();
                   BatteryRecoveryTimer.dispose();
                   debug_battery_recovery_Timer_is_running = false;
-                  //debugging publish, remove if this works:
-                  Particle.publish("Very low battery under load from Solar Heater", PRIVATE);
+                  Particle.publish("Critically low battery under load from Solar Heater. Check hardware and settings.", PRIVATE);
                   // ******** DEBUG CODE **********
                   Particle.process();
                   delay(1000);
