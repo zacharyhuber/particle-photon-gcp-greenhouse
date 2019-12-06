@@ -9,10 +9,10 @@
 PRODUCT_ID(9008); // Argon version using DeviceOS v1.2.1
 PRODUCT_VERSION(24);
 /* Particle Product Description:
-DEBUGGING INA219 problems (removed OneWire reliability fix). 700F supercapacitor & 75W AC water heater. 
+DEBUGGING INA219 problems (removed OneWire reliability fix). 4F supercapacitor & 75W AC water heater. 
 Particle Product firmware for Argon Winter Greenhouse Solar Heat Controller. 
 System.sleep (STOP mode) functional. Solar Heater / Supercapacitor Charger functional. OTA update functional. 
-Uploads every 10 minutes. 700F supercapacitor & 75W water heater connected via 400w (1000w max) inverter. 
+Uploads every 10 minutes. 4F supercapacitor & 75W water heater connected via 400w (1000w max) inverter. 
 (removed)OneWire reliability fixed with do…while loop to cycle through multiple errors. ERROR in INA219 current sensor. 
 Possible error in GND-level supercapacitor control board OR damaged supercapacitor.
  */
@@ -542,10 +542,14 @@ void initialize_solar_heater_relays() {
 }
 
 const int Time_for_SolarHeater_ON = 15; //9:00 AM CST (3:00 PM UTC)
-const int Time_for_SolarHeater_OFF = 23; //3:00 PM CST (9:00 PM UTC) // DEBUG Change back to 21 immediately!
+const int Time_for_SolarHeater_OFF = 21; //3:00 PM CST (9:00 PM UTC)
 const int MAX_SolarHeater_ON_Time = 240000; // in millis
 const int Supercap_Charging_Period = 240000; // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
-const int Battery12v_Recovery_Period = 60000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+const int Battery12v_Recovery_Period = 120000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+const int minimumSafe12vBatteryVoltage = 3000; // ~11.65v in current hardware: December 6, 2019
+const int critical12vBatteryVoltage = 2800;
+const int dangerous12vBatteryVoltage = 2500;
+const int floatVoltage12vBattery = 3400; // should be ?14v in current hardware: December 6, 2019
 
 bool testingSolarCharger = false;
 bool test_of_Solar_Charger_failed = false;
@@ -555,7 +559,7 @@ bool solarHeaterON = false;
 
 void test_of_Solar_Charger() {
     //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
-    if (analogRead(vDividerREADpin) > 2800) { // ~13.4v with diode-skewed GND
+    if (analogRead(vDividerREADpin) > floatVoltage12vBattery) { 
 
         testingSolarCharger = false;
         solarHeaterON = true;
@@ -582,7 +586,7 @@ Timer testingSolarTimer(10000, test_of_Solar_Charger, true); // Should maybe hav
 
 void test_of_Low_Battery_Voltage() {
     //if (read12vBatteryVoltage() < 3200) { // ~12.0v
-    if (read12vBatteryVoltage() < 2400) { // ???~12.0v??? <12.9v with diode-skewed GND
+    if (read12vBatteryVoltage() < critical12vBatteryVoltage) { // ???~12.0v??? <12.9v with diode-skewed GND
         testingLowBattery = false;
         solarHeaterON = false;
         digitalWrite(vDividerOFFpin, HIGH);
@@ -709,7 +713,7 @@ void turnONsolarHeater(void)
     if (solarHeaterON == false && Time.hour() >= Time_for_SolarHeater_ON && Time.hour() <= Time_for_SolarHeater_OFF && lux > 600) {
         
         //if (testingSolarCharger == false && read12vBatteryVoltage() > 3475) { // ~13.0v
-        if (testingSolarCharger == false && read12vBatteryVoltage() > 2650) { // ~12.9v with diode-skewed GND
+        if (testingSolarCharger == false && read12vBatteryVoltage() > floatVoltage12vBattery) { // ~12.9v with diode-skewed GND
             testingSolarCharger = true;
             testingSolarTimer.start();
             delay(500); // let vDivider relay demagnetize from read12vBatteryVoltage call
@@ -752,7 +756,7 @@ void turnOFFsolarHeater(void)
         }
     }
     if (!testingLowBatteryTimer.isActive()) {
-        if (solarHeaterON == true && read12vBatteryVoltage() < 3300) { // ~12.3v
+        if (solarHeaterON == true && read12vBatteryVoltage() < minimumSafe12vBatteryVoltage) { // ~12.3v
             testingLowBattery = true;
             testingLowBatteryTimer.start();
         }
@@ -1438,7 +1442,7 @@ do {
           
           //TODO replace the following code with call to checkSolarConditions()
           //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
-          if (batteryReading12v > 2700 && lux > 600) { // ~13.0v with diode-skewed GND
+          if (batteryReading12v > floatVoltage12vBattery && lux > 600) { 
               delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
               turnONsolarHeater();
               Particle.publish("debug turnONsolarHeater", PRIVATE);
@@ -1446,8 +1450,8 @@ do {
           } else if (lux == 0.00) {
               Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
           }
-          //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ~12.0v
-          if (batteryReading12v < 2400 || lux < 500 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
+          //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { 
+          if (batteryReading12v < minimumSafe12vBatteryVoltage || lux < 500 || Time.hour() > Time_for_SolarHeater_OFF) { 
               turnOFFsolarHeater();
           }
           batteryReading12v = 0;
@@ -1924,8 +1928,8 @@ do {
 }
 
 void checkSolarConditions() {
-    //if (batteryReading12v > 3475 && lux > 1000) { // ~13.0v
-    if (batteryReading12v > 2700 && lux > 600) { // ~13.0v with diode-skewed GND
+    //if (batteryReading12v > 3475 && lux > 1000) { 
+    if (batteryReading12v > floatVoltage12vBattery && lux > 600) { 
         delay(1000); // rest period between calls to read12vBatteryVoltage() to allow relay coils to deenergize
         turnONsolarHeater();
         Particle.publish("debug turnONsolarHeater", PRIVATE);
@@ -1934,7 +1938,7 @@ void checkSolarConditions() {
         Particle.publish("Possible TSL2561 Oversaturation", String(lux), PRIVATE);
     }
     //if (batteryReading12v < 3200 || lux < 800 || Time.hour() > Time_for_SolarHeater_OFF) { // ~12.0v
-    if (batteryReading12v < 2400 || lux < 500 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
+    if (batteryReading12v < minimumSafe12vBatteryVoltage || lux < 500 || Time.hour() > Time_for_SolarHeater_OFF) { // ??? 12.0v ??? with diode-scewed GND
         turnOFFsolarHeater();
     }
 
@@ -2052,8 +2056,8 @@ void solarHeaterCYCLE() {
                   digitalWrite(relay1pin, LOW);
                   //delay(100);
                   //if (lowestReading12vBattery < 3250) {
-                  if (lowestReading12vBattery < 2150) { // ??? 11.5v ??? with diode-skewed GND
-                    Particle.publish("12v battery voltage low under load from Solar Heater", String(lowestReading12vBattery), PRIVATE);
+                  if (lowestReading12vBattery < critical12vBatteryVoltage) {
+                    Particle.publish("12v battery voltage low under load from Solar Heater. Check hardware and settings.", String(lowestReading12vBattery), PRIVATE);
                     // ******** DEBUG CODE **********
                     Particle.process();
                     delay(1000);
@@ -2076,9 +2080,12 @@ void solarHeaterCYCLE() {
                   minimum_battery_recovery_Duration = false;
                   int highestReading12vBattery = analogRead(vDividerREADpin);
                   //if (highestReading12vBattery < 3400) {
-                  if (highestReading12vBattery < 2800) { // ~13.3v with current hardware condition: November 27, 2019
+                  if (highestReading12vBattery < floatVoltage12vBattery) { 
                       Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
                       reset_BatteryRecoveryTimer = true;
+                  } else {
+                      Particle.publish("Float voltage Timer started", PRIVATE);
+                      //TODO FloatVoltageTimer.start();  // Lead Acid batteries need a period of float charging to come up to full charge.
                   }
               }
 
@@ -2090,7 +2097,7 @@ void solarHeaterCYCLE() {
               
               int currentReading12vBattery = analogRead(vDividerREADpin);
               //if (currentReading12vBattery < 3200) { // ~12.0v
-              if (currentReading12vBattery < 1950) { // ??? 11.5v ??? with diode-skewed GND // DEBUG this shouldn't have triggered...
+              if (currentReading12vBattery < critical12vBatteryVoltage) { 
                   digitalWrite(relay1pin, LOW);
                   delay(500);
                   digitalWrite(relay2pin, LOW);
@@ -2243,7 +2250,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > 3100 && minimum_battery_recovery_Duration == false) { // >13.5v with current hardware condition: November 17, 2019
+                  if (currentReading12vBattery > floatVoltage12vBattery && minimum_battery_recovery_Duration == false) { // TODO && FloatVoltageTimer.isActive()
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
@@ -2276,6 +2283,9 @@ void solarHeaterCYCLE() {
                           delay(1000);
                           // ****** END DEBUG CODE ********
                       }
+                  /*TODO***************} else if (FloatVoltageTimer.isActive()) {
+                      Particle.publish("Float Voltage Timer is Running", String(????FloatVoltageTimer.timeremaining????), PRIVATE);
+                      delay(1000);**************/
                   } else {
                       Particle.publish("debug Battery Recovering. 12v Battery Voltage:", String(currentReading12vBattery), PRIVATE, NO_ACK);
                       // ******** DEBUG CODE **********
@@ -2293,7 +2303,7 @@ void solarHeaterCYCLE() {
                   // ****** END DEBUG CODE ********
                   System.disableUpdates();  // Application code hanging with solarHeater ON could quickly kill a battery.
                   //if (currentReading12vBattery < 3350) { // ~12.5v
-                  if (currentReading12vBattery < 2400) { // Measured: 2140 = 10.97v with current hardware: December 3, 2019
+                  if (currentReading12vBattery < minimumSafe12vBatteryVoltage) { 
                       int lowestReading12vBattery = analogRead(vDividerREADpin);
                       digitalWrite(relay1pin, LOW);
                       SolarHeaterTimer.dispose();
@@ -2302,7 +2312,7 @@ void solarHeaterCYCLE() {
                       System.enableUpdates();
                       //delay(100);
                       //if (lowestReading12vBattery < 3250) { // ~12.2v
-                      if (lowestReading12vBattery < 2300) {
+                      if (lowestReading12vBattery < critical12vBatteryVoltage) {
                           //debugging publish, remove if this works:
                           Particle.publish("Very Low battery under load from Solar Heater.", String(lowestReading12vBattery), PRIVATE);
                           // ******** DEBUG CODE **********
