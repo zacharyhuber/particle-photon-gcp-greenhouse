@@ -2,11 +2,11 @@
  * Project particle-gcp-greenhouse
  * Description: Greenhouse environment monitor based on Particle devices and Google Cloud Platform for data storage and analysis
  * Author: Zack Huber
- * Date: Feb 21, 2019
- * Version: 0.2.3
+ * Date: Dec 6, 2019
+ * Version: 0.2.4
  */
 // Product ID and Version for Particle Product firmware deployment
-PRODUCT_ID(9008); // Argon version using DeviceOS v1.2.1
+PRODUCT_ID(9008); // Argon version using DeviceOS v1.4.2
 PRODUCT_VERSION(24);
 /* Particle Product Description:
 DEBUGGING INA219 problems (removed OneWire reliability fix). 4F supercapacitor & 75W AC water heater. 
