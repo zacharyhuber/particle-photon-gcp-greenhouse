@@ -2304,6 +2304,12 @@ void solarHeaterCYCLE() {
                   }
               }
 
+              if (debug_float_voltage_Timer_is_running == true) {
+                  Particle.publish("Float Voltage Timer is Running", String::format("{\"Supercapacitor_Voltage\":%f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), currentReading12vBattery), PRIVATE, NO_ACK);
+                  //TODO If this .publish works reliably without the Particle.process(), the rest of those calls should be removed throughout firmware
+                  delay(5000);
+              }
+
               if (debug_solar_heater_Timer_is_running == true) { // DEBUG !SolarHeaterTimer.isActive() was not evaluating correctly
                   // ******** DEBUG CODE **********
                   //Particle.publish("debug You have reached the Solar Heater running code of while loop", String(currentReading12vBattery), PRIVATE, NO_ACK); //DEBUG
