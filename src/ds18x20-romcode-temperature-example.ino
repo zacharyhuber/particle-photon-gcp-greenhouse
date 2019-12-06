@@ -546,6 +546,7 @@ const int Time_for_SolarHeater_OFF = 21; //3:00 PM CST (9:00 PM UTC)
 const int MAX_SolarHeater_ON_Time = 240000; // in millis
 const int Supercap_Charging_Period = 240000; // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 const int Battery12v_Recovery_Period = 120000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
+const int FloatVoltage_Charging_Period = 60000; // in millis THIS SHOULD BE REPLACED WITH AN ACCURATE ACCOUNTING OF STATE OF CHARGE
 const int minimumSafe12vBatteryVoltage = 3000; // ~11.65v in current hardware: December 6, 2019
 const int critical12vBatteryVoltage = 2800;
 const int dangerous12vBatteryVoltage = 2500;
@@ -558,7 +559,7 @@ bool testingLowLight = false;
 bool solarHeaterON = false;
 
 void test_of_Solar_Charger() {
-    //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller.
+    //if (read12vBatteryVoltage() > 3475) { // ~13.0v This could have better tests, including a "float" LED signal from the solar charge controller or a proper state of charge management IC.
     if (analogRead(vDividerREADpin) > floatVoltage12vBattery) { 
 
         testingSolarCharger = false;
@@ -631,6 +632,13 @@ void transition_from_Battery_Recovery_out() {
     */
 }
 Timer BatteryRecoveryTimer(Battery12v_Recovery_Period, transition_from_Battery_Recovery_out, true);
+
+
+bool debug_float_voltage_Timer_is_running = false; // DEBUG ~Timer.isActive() seems to update on calls to loop()
+void float_voltage_charging_finished() {
+    debug_float_voltage_Timer_is_running = false;
+}
+Timer FloatVoltageTimer(FloatVoltage_Charging_Period, float_voltage_charging_finished, true);
 
 
 bool flag_transition_from_Solar_Heater_to_Battery_Recovery = false; // Timer callbacks are causing hard faults.  Move all logic to "while" loop.
@@ -2084,8 +2092,9 @@ void solarHeaterCYCLE() {
                       Particle.publish("12v Battery did not recover fully during Recovery Period", String(highestReading12vBattery), PRIVATE);
                       reset_BatteryRecoveryTimer = true;
                   } else {
-                      Particle.publish("Float voltage Timer started", PRIVATE);
-                      //TODO FloatVoltageTimer.start();  // Lead Acid batteries need a period of float charging to come up to full charge.
+                      Particle.publish("Float voltage Timer started. Solar Heater will resume in 60 seconds.", PRIVATE);
+                      FloatVoltageTimer.start();  // Lead Acid batteries need a period of float charging to come up to full charge.
+                      debug_float_voltage_Timer_is_running = true;
                   }
               }
 
@@ -2122,7 +2131,7 @@ void solarHeaterCYCLE() {
               } // else if (currentReading12vBattery > 3400) {}
 
 
-              if (debug_solar_heater_Timer_is_running == false && debug_battery_recovery_Timer_is_running == false) { // DEBUG !SolarHeaterTimer.isActive() and !BatteryRecoveryTimer.isActive() were not evaluating correctly
+              if (debug_solar_heater_Timer_is_running == false && debug_battery_recovery_Timer_is_running == false && debug_float_voltage_Timer_is_running == false) { // DEBUG !SolarHeaterTimer.isActive() and !BatteryRecoveryTimer.isActive() were not evaluating correctly
                   if (debug_supercap_charger_Timer_is_running == false) { // DEBUG !SupercapChargerTimer.isActive() was not evaluating correctly
                       // ******** DEBUG CODE **********
                       Particle.publish("debug ATTEMPTING TO START SUPERCAPACITOR CHARGER", PRIVATE, NO_ACK);
@@ -2249,7 +2258,7 @@ void solarHeaterCYCLE() {
 
               if (debug_battery_recovery_Timer_is_running == true) {
                   //if (currentReading12vBattery > 3775) { // >13.5v
-                  if (currentReading12vBattery > floatVoltage12vBattery && minimum_battery_recovery_Duration == false) { // TODO && FloatVoltageTimer.isActive()
+                  if (currentReading12vBattery > floatVoltage12vBattery && minimum_battery_recovery_Duration == false && debug_float_voltage_Timer_is_running == false) {
                       if (ina219.getBusVoltage_V() > 2.0) {
                           delay(1000); // if Battery Recovery was just activated, the Solar Heater relay may not be done switching
                           BatteryRecoveryTimer.dispose();
@@ -2282,9 +2291,10 @@ void solarHeaterCYCLE() {
                           delay(1000);
                           // ****** END DEBUG CODE ********
                       }
-                  /*TODO***************} else if (FloatVoltageTimer.isActive()) {
-                      Particle.publish("Float Voltage Timer is Running", String(????FloatVoltageTimer.timeremaining????), PRIVATE);
-                      delay(1000);**************/
+                  } else if (debug_float_voltage_Timer_is_running == true) {
+                      Particle.publish("Float Voltage Timer is Running", String::format("{\"Supercapacitor_Voltage\":%f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), currentReading12vBattery), PRIVATE, NO_ACK);
+                      //TODO If this .publish works reliably without the Particle.process(), the rest of those calls should be removed throughout firmware
+                      delay(5000);
                   } else {
                       Particle.publish("debug Battery Recovering. 12v Battery Voltage:", String(currentReading12vBattery), PRIVATE, NO_ACK);
                       // ******** DEBUG CODE **********
