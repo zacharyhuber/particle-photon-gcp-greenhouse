@@ -2102,6 +2102,9 @@ void solarHeaterCYCLE() {
                   reset_BatteryRecoveryTimer = false;
                   BatteryRecoveryTimer.reset();
                   debug_battery_recovery_Timer_is_running = true;
+                  // TODO This is NOT how this code should work: any reading about the float voltage should trigger the FloatVoltageTimer
+                  FloatVoltageTimer.start();
+                  debug_float_voltage_Timer_is_running = true;
               }
               
               int currentReading12vBattery = analogRead(vDividerREADpin);
@@ -2291,8 +2294,9 @@ void solarHeaterCYCLE() {
                           delay(1000);
                           // ****** END DEBUG CODE ********
                       }
+                  // This might never be called. TODO remove if unnecessary
                   } else if (debug_float_voltage_Timer_is_running == true) {
-                      Particle.publish("Float Voltage Timer is Running", String::format("{\"Supercapacitor_Voltage\":%f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), currentReading12vBattery), PRIVATE, NO_ACK);
+                      Particle.publish("Float Voltage Timer is running", String::format("{\"Supercapacitor_Voltage\":%f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), currentReading12vBattery), PRIVATE, NO_ACK);
                       //TODO If this .publish works reliably without the Particle.process(), the rest of those calls should be removed throughout firmware
                       delay(5000);
                   } else {
@@ -2305,7 +2309,7 @@ void solarHeaterCYCLE() {
               }
 
               if (debug_float_voltage_Timer_is_running == true) {
-                  Particle.publish("Float Voltage Timer is Running", String::format("{\"Supercapacitor_Voltage\":%f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), currentReading12vBattery), PRIVATE, NO_ACK);
+                  Particle.publish("Float Voltage Timer is running", String::format("{\"Supercapacitor_Voltage\":%f,\"12vBattery_Voltage\":%d}", ina219.getBusVoltage_V(), currentReading12vBattery), PRIVATE, NO_ACK);
                   //TODO If this .publish works reliably without the Particle.process(), the rest of those calls should be removed throughout firmware
                   delay(5000);
               }
