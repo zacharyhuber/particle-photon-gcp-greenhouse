@@ -550,7 +550,7 @@ const int FloatVoltage_Charging_Period = 60000; // in millis THIS SHOULD BE REPL
 const int minimumSafe12vBatteryVoltage = 3000; // ~11.65v in current hardware: December 6, 2019
 const int critical12vBatteryVoltage = 2800;
 const int dangerous12vBatteryVoltage = 2500;
-const int floatVoltage12vBattery = 3400; // should be ?14v in current hardware: December 6, 2019
+const int floatVoltage12vBattery = 3600; // TESTED 3498 = 12.77v in current hardware: December 6, 2019
 
 bool testingSolarCharger = false;
 bool test_of_Solar_Charger_failed = false;
