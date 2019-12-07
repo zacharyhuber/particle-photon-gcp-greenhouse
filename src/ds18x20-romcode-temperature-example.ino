@@ -13,7 +13,7 @@ DEBUGGING INA219 problems (removed OneWire reliability fix). 4F supercapacitor &
 Particle Product firmware for Argon Winter Greenhouse Solar Heat Controller. 
 System.sleep (STOP mode) functional. Solar Heater / Supercapacitor Charger functional. OTA update functional. 
 Uploads every 10 minutes. 4F supercapacitor & 75W water heater connected via 400w (1000w max) inverter. 
-(removed)OneWire reliability fixed with do…while loop to cycle through multiple errors. ERROR in INA219 current sensor. 
+OneWire reliability fixed with do…while loop to cycle through multiple errors. ERROR in INA219 current sensor. 
 Possible error in GND-level supercapacitor control board OR damaged supercapacitor.
  */
 
@@ -547,10 +547,12 @@ const int MAX_SolarHeater_ON_Time = 240000; // in millis
 const int Supercap_Charging_Period = 240000; // in millis THIS SHOULD BE REPLACED WITH A CURRENT MONITOR ON THE SUPERCAPACITOR
 const int Battery12v_Recovery_Period = 120000; // in millis THIS SHOULD BE REPLACED WITH A CAREFUL VOLTAGE_BASED ACCOUNTING OF BATTERY HEALTH
 const int FloatVoltage_Charging_Period = 60000; // in millis THIS SHOULD BE REPLACED WITH AN ACCURATE ACCOUNTING OF STATE OF CHARGE
-const int minimumSafe12vBatteryVoltage = 3000; // ~11.65v in current hardware: December 6, 2019
+const int minimumSafe12vBatteryVoltage = 3000; // ~11.65v in current hardware: December 6, 2019 (TESTED 11.6v in current hardware: December 7, 2019)
 const int critical12vBatteryVoltage = 2800;
 const int dangerous12vBatteryVoltage = 2500;
 const int floatVoltage12vBattery = 3600; // TESTED 3498 = 12.77v in current hardware: December 6, 2019
+                                            // TESTED 3889 = 14.18v in current hardware: December 7, 2019
+                                            
 
 bool testingSolarCharger = false;
 bool test_of_Solar_Charger_failed = false;
