@@ -1057,8 +1057,8 @@ do {
     addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7]
     );
 
-    const char greenhouseROM[] = "2874722A070000A5";
-    const char waterROM[] = "285DE726070000F2";
+    const char greenhouseROM[] = "28ABE11C070000FD";
+    const char waterROM[] = "2874722A070000A5";
     const char heattankROM[] = "28F1FA29070000D9";
 
       if (strcmp(ROMCODE,greenhouseROM) == 0) {
@@ -1159,7 +1159,7 @@ do {
   Serial.println();
 
 //***DEBUG INA219 problems*** 
-} while ((ONEWIRE_sensors_finished == false) || (greenhouseTemp == 0 && waterTemp == 0 && heattankTemp == 0));  // TODO Needs to be updated as additional weather hardened sensors are added
+} while (ONEWIRE_sensors_finished == false || greenhouseTemp == 0 || waterTemp == 0);  // TODO Needs to be updated as additional weather hardened sensors are added
 
   
 
